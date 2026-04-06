@@ -204,7 +204,7 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
       [seal_id, '', 'web-upload', 'direct', verify_url]
     );
 
-    const packDir = '/app';
+    const packDir = '/tmp';
     const keyFile = '/tmp/signing_key.json';
     require('fs').writeFileSync(keyFile, process.env.BUILDSEAL_KEY_JSON || '{}');
     const v5bin = '/app/isc_pack_v5_bin';
