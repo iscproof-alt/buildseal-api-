@@ -237,7 +237,9 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
     let verifyOut = '';
     try {
       const packExists = require('fs').existsSync(packPath);
+      const packContent = packExists ? JSON.parse(require('fs').readFileSync(packPath, 'utf8')) : {};
       console.log('PACK EXISTS:', packExists, packPath);
+      console.log('PACK TSA:', JSON.stringify(packContent.tsa));
       verifyOut = execSync(`/app/isc_pack_v5_bin --verify ${packPath}`, { encoding: 'utf8' });
       verdict = verifyOut.includes('PACK VERIFIED') || verifyOut.trimStart().startsWith('VALID') ? 'VALID' : 'INVALID';
     } catch(verifyErr) {
