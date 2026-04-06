@@ -221,6 +221,17 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
       const rootHash = packJsonTsa.root || '';
       if (rootHash) tsaResult = await requestTSA(rootHash);
     } catch(e) { tsaResult.error = e.message; }
+    // TSA token'ı pack.json'a yaz
+    try {
+      const packData = JSON.parse(require('fs').readFileSync(`${packDir}/${seal_id}_v5_pack.json`, 'utf8'));
+      packData.tsa = {
+        present: tsaResult.present,
+        provider: tsaResult.provider || 'freetsa',
+        time: tsaResult.time || null,
+        algorithm: 'sha256'
+      };
+      require('fs').writeFileSync(`${packDir}/${seal_id}_v5_pack.json`, JSON.stringify(packData, null, 2));
+    } catch(e) { console.error('TSA pack write error:', e.message); }
 
     let verdict = 'INVALID';
     let verifyOut = '';
