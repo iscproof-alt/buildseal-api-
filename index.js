@@ -273,6 +273,22 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
   }
 });
 
+
+app.get('/pack/:seal_id', async (req, res) => {
+  const { seal_id } = req.params;
+  const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [seal_id]);
+  if (!rows.length) return res.status(404).json({ error: "seal not found" });
+  const r = rows[0];
+  const packPath = r.pack_path || `/tmp/${seal_id}_v5_pack.json`;
+  const fs = require('fs');
+  if (!fs.existsSync(packPath)) {
+    return res.status(404).json({ error: "pack file not found", seal_id });
+  }
+  const pack = JSON.parse(fs.readFileSync(packPath, 'utf8'));
+  res.setHeader('Content-Disposition', `attachment; filename="${seal_id}_v5_pack.json"`);
+  res.setHeader('Content-Type', 'application/json');
+  res.json(pack);
+});
 app.get('/verify/:id', async (req, res) => {
   const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [req.params.id]);
   if (!rows.length) return res.status(404).json({ error: 'not found' });
