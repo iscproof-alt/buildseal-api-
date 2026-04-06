@@ -70,6 +70,7 @@ async function initDb() {
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS tsa_json TEXT`);
   console.log("DB ready");
+console.log("BOOT: tsa-v3");
 }
 initDb();
 
