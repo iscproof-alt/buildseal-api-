@@ -69,6 +69,7 @@ async function initDb() {
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS verify_output_json TEXT`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS tsa_json TEXT`);
+  await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS pack_json TEXT`);
   console.log("DB ready");
 console.log("BOOT: tsa-v3");
 }
@@ -255,8 +256,8 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
     } catch(e) {}
     const verifyJson = { verdict, output: verifyOut };
     await pool.query(
-      "UPDATE seals SET status='DONE', verdict=$1, pack_path=$2, verify_output_json=$3, verified_at=NOW(), artifact_hash=$4, tsa_json=$5 WHERE seal_id=$6",
-      [verdict, packPath, verifyOut, artifactHash, JSON.stringify(tsaResult), seal_id]
+      "UPDATE seals SET status='DONE', verdict=$1, pack_path=$2, verify_output_json=$3, verified_at=NOW(), artifact_hash=$4, tsa_json=$5, pack_json=$6 WHERE seal_id=$7",
+      [verdict, packPath, verifyOut, artifactHash, JSON.stringify(tsaResult), require("fs").existsSync(packPath) ? require("fs").readFileSync(packPath, "utf8") : null, seal_id]
     );
 
     const pdfCmd = `cd /home/hakan/ali && source venv/bin/activate && python3 /app/tools/generate_proof_pdf.py ${packPath}`;
@@ -279,10 +280,17 @@ app.get('/pack/:seal_id', async (req, res) => {
   const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [seal_id]);
   if (!rows.length) return res.status(404).json({ error: "seal not found" });
   const r = rows[0];
+  // Önce DB'den oku
+  if (r.pack_json) {
+    res.setHeader('Content-Disposition', `attachment; filename="${seal_id}_v5_pack.json"`);
+    res.setHeader('Content-Type', 'application/json');
+    return res.send(r.pack_json);
+  }
+  // DB'de yoksa /tmp'den oku
   const packPath = r.pack_path || `/tmp/${seal_id}_v5_pack.json`;
   const fs = require('fs');
   if (!fs.existsSync(packPath)) {
-    return res.status(404).json({ error: "pack file not found", seal_id });
+    return res.status(404).json({ error: "pack file not found — pack may have expired", seal_id });
   }
   const pack = JSON.parse(fs.readFileSync(packPath, 'utf8'));
   res.setHeader('Content-Disposition', `attachment; filename="${seal_id}_v5_pack.json"`);
