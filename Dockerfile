@@ -18,7 +18,7 @@ COPY . .
 RUN python3 -m venv /venv && \
     /venv/bin/pip install reportlab
 
-RUN cd isc_pack_v5 && cargo build --release && cp target/release/isc_pack_v5 /app/isc_pack_v5_bin
+RUN echo 'cache-bust-v2' && cd isc_pack_v5 && cargo build --release && cp target/release/isc_pack_v5 /app/isc_pack_v5_bin
 
 ENV PATH="/venv/bin:${PATH}"
 
