@@ -70,6 +70,7 @@ async function initDb() {
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS tsa_json TEXT`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS pack_json TEXT`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_seals_artifact_hash ON seals(artifact_hash)`);
   console.log("DB ready");
 console.log("BOOT: tsa-v3");
 }
@@ -274,6 +275,29 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
   }
 });
 
+
+
+app.post('/verify-by-hash', async (req, res) => {
+  const { artifact_hash } = req.body;
+  if (!artifact_hash) return res.status(400).json({ found: false, error: "artifact_hash required" });
+  const { rows } = await pool.query(
+    "SELECT * FROM seals WHERE artifact_hash=$1 ORDER BY created_at DESC LIMIT 1",
+    [artifact_hash]
+  );
+  if (!rows.length) return res.json({ found: false });
+  const r = rows[0];
+  const tsa = r.tsa_json ? JSON.parse(r.tsa_json) : { present: false };
+  res.json({
+    found: true,
+    seal_id: r.seal_id,
+    status: r.status,
+    verify_url: r.verify_url,
+    timestamp: r.verified_at || r.created_at,
+    root: r.pack_hash || null,
+    artifact_hash: r.artifact_hash,
+    tsa
+  });
+});
 
 app.get('/pack/:seal_id', async (req, res) => {
   const { seal_id } = req.params;
