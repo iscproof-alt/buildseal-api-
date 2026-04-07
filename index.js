@@ -293,7 +293,7 @@ app.post('/verify-by-hash', async (req, res) => {
     status: r.status,
     verify_url: r.verify_url,
     timestamp: r.verified_at || r.created_at,
-    root: r.pack_hash || null,
+    root: r.pack_hash || (r.pack_json ? JSON.parse(r.pack_json).root : null),
     artifact_hash: r.artifact_hash,
     tsa
   });
