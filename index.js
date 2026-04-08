@@ -30,12 +30,15 @@ async function requestTSA(rootHex) {
       const tsaTime = timeMatch ? new Date(timeMatch[1]).toISOString() : new Date().toISOString();
       
       // Cleanup
+      let tokenB64 = '';
+      try { tokenB64 = require('fs').readFileSync(respFile).toString('base64'); } catch(_) {}
       try { fs.unlinkSync(hashFile); fs.unlinkSync(reqFile); fs.unlinkSync(respFile); } catch(_) {}
       
       resolve({
         present: true,
         provider: 'freetsa',
-        time: tsaTime
+        time: tsaTime,
+        token_b64: tokenB64
       });
     } catch(e) {
       resolve({ present: false, provider: 'freetsa', error: e.message.slice(0, 100) });
@@ -231,7 +234,8 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
         present: tsaResult.present,
         provider: tsaResult.provider || 'freetsa',
         time: tsaResult.time || null,
-        algorithm: 'sha256'
+        algorithm: 'sha256',
+        token_b64: tsaResult.token_b64 || ''
       };
       require('fs').writeFileSync(`${packDir}/${seal_id}_v5_pack.json`, JSON.stringify(packData, null, 2));
     } catch(e) { console.error('TSA pack write error:', e.message); }
