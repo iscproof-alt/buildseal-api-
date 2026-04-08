@@ -274,7 +274,8 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
     const rootMatch = verifyOut.match(/root:\s+([a-f0-9]+)/);
     const sealedAtMatch = verifyOut.match(/sealed_at:\s+(\S+)/);
     const root_hash = rootMatch ? rootMatch[1] : '';
-    const sealed_at = sealedAtMatch ? sealedAtMatch[1] : '';
+    let sealed_at = sealedAtMatch ? sealedAtMatch[1] : '';
+    if (!sealed_at) { try { const pj = JSON.parse(require('fs').readFileSync(packPath, 'utf8')); sealed_at = pj.sealed_at || ''; } catch(e) {} }
     const tsa = tsaResult.present ? { present: true, provider: tsaResult.provider, time: tsaResult.time } : { present: false };
     res.json({ seal_id, verdict, verify_url, root_hash, sealed_at, tsa, verify_output: verifyJson });
 
