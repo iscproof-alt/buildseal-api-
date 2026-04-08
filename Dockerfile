@@ -22,5 +22,8 @@ RUN python3 -m venv /venv && \
 
 ENV PATH="/venv/bin:${PATH}"
 
+# FreeTSA sertifikalarını indir
+RUN curl -s https://freetsa.org/files/cacert.pem -o /tmp/freetsa_ca.pem &&     curl -s https://freetsa.org/files/tsa.crt -o /tmp/freetsa_tsa.crt
+
 EXPOSE 3000
 CMD ["node", "index.js"]
