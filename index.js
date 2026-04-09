@@ -142,7 +142,7 @@ app.post("/seal", async (req, res) => {
       "UPDATE seals SET status='completed', pack_hash=$1 WHERE seal_id=$2",
       [packData.root, seal_id]
     );
-    try { fs.unlinkSync(packPath); } catch(_) {}
+    // packPath line 268'den sonra siliniyor
   } catch(e) {
     status = 'failed';
     console.error('isc_pack_v5 error:', e.message);
@@ -271,6 +271,7 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
 
     const pdfCmd = `cd /home/hakan/ali && source venv/bin/activate && python3 /app/tools/generate_proof_pdf.py ${packPath}`;
     try { execSync(`bash -c "${pdfCmd}"`, { encoding: 'utf8' }); } catch(e) {}
+    try { fs.unlinkSync(packPath); } catch(_) {}
     const rootMatch = verifyOut.match(/root:\s+([a-f0-9]+)/);
     const sealedAtMatch = verifyOut.match(/sealed_at:\s+(\S+)/);
     const root_hash = rootMatch ? rootMatch[1] : '';
