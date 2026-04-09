@@ -175,7 +175,8 @@ app.get("/seal/:seal_id", async (req, res) => {
     status: r.status,
     created_at: r.created_at,
     verify_url: r.verify_url,
-    root: r.pack_hash || null
+    root: r.pack_hash || null,
+    tsa: r.tsa_json ? JSON.parse(r.tsa_json) : { present: false }
   });
 });
 
