@@ -336,7 +336,40 @@ app.get('/verify/:id', async (req, res) => {
   const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [req.params.id]);
   if (!rows.length) return res.status(404).json({ error: 'not found' });
   const r = rows[0];
-  res.json({ ...r, verdict: r.verdict || 'PENDING', tsa: r.tsa_json ? JSON.parse(r.tsa_json) : { present: false } });
+  res.json({ ...r, verdict: r.verdict || 'PENDING', tsa: r.tsa_json ? JSON.parse(r.tsa_json) : { present: false }, verify_detail: parseVerifyOutput(r.verify_output_json) });
 });
+
+function parseVerifyOutput(raw) {
+  if (!raw) return null;
+  const lines = raw.split('\n').filter(Boolean);
+  const result = { raw, verified: false, fields: {} };
+  for (const line of lines) {
+    if (line.includes('PACK VERIFIED')) result.verified = true;
+    if (line.includes('VERIFICATION FAILED')) { result.verified = false; result.failed = true; }
+    const m = line.match(/^(\w+):\s+(.+)/);
+    if (m) result.fields[m[1].trim()] = m[2].trim();
+    const code = line.match(/^Code:\s+(.+)/);
+    if (code) result.error_code = code[1].trim();
+    const reason = line.match(/^Reason:\s+(.+)/);
+    if (reason) result.error_reason = reason[1].trim();
+  }
+  return result;
+}
+
+app.post('/verify-pack', upload.single('pack'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'no file' });
+    const v5bin = '/app/isc_pack_v5_bin';
+    let verifyOut = '';
+    let verdict = 'INVALID';
+    try {
+      verifyOut = require('child_process').execSync(`${v5bin} --verify ${req.file.path}`, { encoding: 'utf8' });
+      verdict = verifyOut.includes('PACK VERIFIED') ? 'VALID' : 'INVALID';
+    } catch(e) { verifyOut = e.stderr || e.message; }
+    const parsed = parseVerifyOutput(verifyOut);
+    res.json({ verdict, verify_detail: parsed });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 
 app.listen(process.env.PORT || 3000, () => console.log("BuildSeal API running on :3000"));
