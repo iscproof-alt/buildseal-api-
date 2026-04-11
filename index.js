@@ -408,6 +408,8 @@ function parseVerifyOutput(raw) {
   result.root_match = result.verified === true && result.error_code !== 'ROOT_MISMATCH';
   result.sig_valid = result.verified === true && result.error_code !== 'SIGNATURE_INVALID';
   result.tsa_verified = typeof result.fields.tsa === 'string' && result.fields.tsa.includes('VERIFIED');
+  result.pack_version = '5.1';
+  result.root = result.fields.root || null;
   return result;
 }
 
