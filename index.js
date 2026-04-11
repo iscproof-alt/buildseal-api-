@@ -386,7 +386,8 @@ app.get('/verify/:id', async (req, res) => {
   const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [req.params.id]);
   if (!rows.length) return res.status(404).json({ error: 'not found' });
   const r = rows[0];
-  res.json({ ...r, verdict: r.verdict || 'PENDING', tsa: r.tsa_json ? JSON.parse(r.tsa_json) : { present: false }, verify_detail: parseVerifyOutput(r.verify_output_json) });
+  const { pack_json, tsa_json, verify_output_json, ...rest } = r;
+  res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_json ? JSON.parse(tsa_json) : { present: false }, verify_detail: parseVerifyOutput(verify_output_json) });
 });
 
 function parseVerifyOutput(raw) {
