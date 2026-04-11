@@ -132,11 +132,12 @@ app.post("/seal", async (req, res) => {
 
   const seal_id = "seal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
   const verify_url = (process.env.BASE_URL || "https://buildseal-api-production-3ca5.up.railway.app") + "/seal/" + seal_id;
+  const evidence_pack_url = "https://verify.buildseal.io/pack/" + seal_id;
   const sealed_at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
   await pool.query(
-    "INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, status) VALUES ($1,$2,$3,$4,$5,'processing')",
-    [seal_id, artifact_hash, repo || 'web', commit || 'direct', verify_url]
+    "INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, evidence_pack_url, status) VALUES ($1,$2,$3,$4,$5,$6,'processing')",
+    [seal_id, artifact_hash, repo || 'web', commit || 'direct', verify_url, evidence_pack_url]
   );
 
   const fs = require('fs');
@@ -253,10 +254,11 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
 
     const seal_id = 'seal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const verify_url = 'https://verify.buildseal.io/release/' + seal_id;
+    const evidence_pack_url = 'https://verify.buildseal.io/pack/' + seal_id;
 
     await pool.query(
-      "INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, status, verdict) VALUES ($1,$2,$3,$4,$5,'PROCESSING','PENDING')",
-      [seal_id, '', 'web-upload', 'direct', verify_url]
+      "INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, evidence_pack_url, status, verdict) VALUES ($1,$2,$3,$4,$5,$6,'PROCESSING','PENDING')",
+      [seal_id, '', 'web-upload', 'direct', verify_url, evidence_pack_url]
     );
 
     const packDir = '/tmp';
@@ -327,7 +329,7 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
     if (!sealed_at) { try { const pj = JSON.parse(require('fs').readFileSync(packPath, 'utf8')); sealed_at = pj.sealed_at || ''; } catch(e) {} }
     const tsa = tsaResult.present ? { present: true, provider: tsaResult.provider, time: tsaResult.time } : { present: false };
     log("info", "seal.complete", { seal_id, verdict, tsa_present: tsa.present, duration_ms: Date.now() - _t });
-    res.json({ seal_id, verdict, verify_url, root_hash, sealed_at, tsa, verify_output: verifyJson });
+    res.json({ seal_id, verdict, verify_url, evidence_pack_url, root_hash, sealed_at, tsa, verify_output: verifyJson });
 
   } catch(e) {
     res.status(500).json({ error: e.message });
