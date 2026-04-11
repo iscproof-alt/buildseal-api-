@@ -74,9 +74,20 @@ async function initDb() {
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS tsa_json TEXT`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS pack_json TEXT`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_seals_artifact_hash ON seals(artifact_hash)`);
-  console.log("DB ready");
-console.log("BOOT: tsa-v3");
+  log("info", "db.ready");
+log("info", "boot", { version: "tsa-v3" });
 }
+
+// Structured JSON logger
+function log(level, event, data = {}) {
+  console.log(JSON.stringify({
+    ts: new Date().toISOString(),
+    level,
+    event,
+    ...data
+  }));
+}
+
 
 // Key lifecycle — initialize once at startup
 const KEY_PATH = (() => {
@@ -85,10 +96,10 @@ const KEY_PATH = (() => {
   } else if (process.env.BUILDSEAL_KEY_JSON) {
     const kp = '/tmp/buildseal_runtime.key.json';
     require('fs').writeFileSync(kp, process.env.BUILDSEAL_KEY_JSON, { mode: 0o600 });
-    console.log('BOOT: key written to', kp);
+    log("info", "key.init", { path: kp });
     return kp;
   } else {
-    console.warn('BOOT: WARNING — using fallback local key');
+    log("warn", "key.fallback", { path: __dirname + "/buildseal_new.key.json" });
     return __dirname + '/buildseal_new.key.json';
   }
 })();
@@ -151,7 +162,7 @@ app.post("/seal", async (req, res) => {
     // packPath line 268'den sonra siliniyor
   } catch(e) {
     status = 'failed';
-    console.error('isc_pack_v5 error:', e.message);
+    log("error", "seal.failed", { error: e.message });
     await pool.query("UPDATE seals SET status='failed' WHERE seal_id=$1", [seal_id]);
   }
 
@@ -205,6 +216,7 @@ const multer = require('multer');
 const upload = multer({ dest: '/tmp/uploads/' });
 
 app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
+  const _t = Date.now();
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'no file' });
@@ -244,15 +256,15 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
         token_b64: tsaResult.token_b64 || ''
       };
       require('fs').writeFileSync(`${packDir}/${seal_id}_v5_pack.json`, JSON.stringify(packData, null, 2));
-    } catch(e) { console.error('TSA pack write error:', e.message); }
+    } catch(e) { log("error", "tsa.pack_write_failed", { error: e.message }); }
 
     let verdict = 'INVALID';
     let verifyOut = '';
     try {
       const packExists = require('fs').existsSync(packPath);
       const packContent = packExists ? JSON.parse(require('fs').readFileSync(packPath, 'utf8')) : {};
-      console.log('PACK EXISTS:', packExists, packPath);
-      console.log('PACK TSA:', JSON.stringify(packContent.tsa));
+      log("debug", "pack.exists", { exists: packExists, path: packPath });
+      log("debug", "pack.tsa", { tsa: packContent.tsa });
       verifyOut = execSync(`/app/isc_pack_v5_bin --verify ${packPath}`, { encoding: 'utf8' });
       const packVerified = verifyOut.includes('PACK VERIFIED') || verifyOut.trimStart().startsWith('VALID');
       const tsaVerified = verifyOut.includes('tsa:         VERIFIED');
@@ -284,6 +296,7 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
     let sealed_at = sealedAtMatch ? sealedAtMatch[1] : '';
     if (!sealed_at) { try { const pj = JSON.parse(require('fs').readFileSync(packPath, 'utf8')); sealed_at = pj.sealed_at || ''; } catch(e) {} }
     const tsa = tsaResult.present ? { present: true, provider: tsaResult.provider, time: tsaResult.time } : { present: false };
+    log("info", "seal.complete", { seal_id, verdict, tsa_present: tsa.present, duration_ms: Date.now() - _t });
     res.json({ seal_id, verdict, verify_url, root_hash, sealed_at, tsa, verify_output: verifyJson });
 
   } catch(e) {
@@ -377,4 +390,4 @@ app.post('/verify-pack', upload.single('pack'), async (req, res) => {
 });
 
 
-app.listen(process.env.PORT || 3000, () => console.log("BuildSeal API running on :3000"));
+app.listen(process.env.PORT || 3000, () => log("info", "server.start", { port: process.env.PORT || 3000 }));
