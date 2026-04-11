@@ -403,6 +403,10 @@ function parseVerifyOutput(raw) {
     const reason = line.match(/^Reason:\s+(.+)/);
     if (reason) result.error_reason = reason[1].trim();
   }
+  // Derived booleans — safe for UI consumption
+  result.root_match = result.verified === true && result.error_code !== 'ROOT_MISMATCH';
+  result.sig_valid = result.verified === true && result.error_code !== 'SIGNATURE_INVALID';
+  result.tsa_verified = typeof result.fields.tsa === 'string' && result.fields.tsa.includes('VERIFIED');
   return result;
 }
 
