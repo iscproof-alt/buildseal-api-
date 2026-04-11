@@ -77,6 +77,22 @@ async function initDb() {
   console.log("DB ready");
 console.log("BOOT: tsa-v3");
 }
+
+// Key lifecycle — initialize once at startup
+const KEY_PATH = (() => {
+  if (require('fs').existsSync('/etc/secrets/buildseal.key.json')) {
+    return '/etc/secrets/buildseal.key.json';
+  } else if (process.env.BUILDSEAL_KEY_JSON) {
+    const kp = '/tmp/buildseal_runtime.key.json';
+    require('fs').writeFileSync(kp, process.env.BUILDSEAL_KEY_JSON, { mode: 0o600 });
+    console.log('BOOT: key written to', kp);
+    return kp;
+  } else {
+    console.warn('BOOT: WARNING — using fallback local key');
+    return __dirname + '/buildseal_new.key.json';
+  }
+})();
+
 initDb();
 
 const app = express();
@@ -110,16 +126,6 @@ app.post("/seal", async (req, res) => {
   fs.writeFileSync(tmpContent, artifact_hash);
 
   const binPath = __dirname + '/isc_pack_v5_bin';
-  // Key: Render secret file > env var > local
-  let keyPath;
-  if (require('fs').existsSync('/etc/secrets/buildseal.key.json')) {
-    keyPath = '/etc/secrets/buildseal.key.json';
-  } else if (process.env.BUILDSEAL_KEY_JSON) {
-    const fs = require('fs');
-    keyPath = '/tmp/buildseal_runtime.key.json';
-    fs.writeFileSync(keyPath, process.env.BUILDSEAL_KEY_JSON);
-  } else {
-    keyPath = __dirname + '/buildseal_new.key.json';
   }
 
   let packData = null;
@@ -212,8 +218,7 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
     );
 
     const packDir = '/tmp';
-    const keyFile = '/tmp/signing_key.json';
-    require('fs').writeFileSync(keyFile, process.env.BUILDSEAL_KEY_JSON || '{}');
+    const keyFile = KEY_PATH;
     const v5bin = '/app/isc_pack_v5_bin';
 
     const packOut = execSync(
