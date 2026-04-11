@@ -229,6 +229,7 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'no file' });
+    if (file.size === 0) return res.status(400).json({ error: 'empty file', code: 'EMPTY_FILE' });
 
     const seal_id = 'seal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const verify_url = 'https://verify.buildseal.io/release/' + seal_id;
