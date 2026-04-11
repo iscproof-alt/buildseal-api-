@@ -222,7 +222,27 @@ app.post("/seal/:seal_id/pack", async (req, res) => {
 
 const { execSync } = require('child_process');
 const multer = require('multer');
-const upload = multer({ dest: '/tmp/uploads/' });
+const upload = multer({
+  dest: '/tmp/uploads/',
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  fileFilter: (req, file, cb) => {
+    if (!file.originalname || file.originalname.includes('..')) {
+      return cb(new Error('INVALID_FILENAME'));
+    }
+    cb(null, true);
+  }
+});
+
+// Multer error handler
+function handleMulterError(err, req, res, next) {
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'File too large', code: 'FILE_TOO_LARGE', max_bytes: 50 * 1024 * 1024 });
+  }
+  if (err.message === 'INVALID_FILENAME') {
+    return res.status(400).json({ error: 'Invalid filename', code: 'INVALID_FILENAME' });
+  }
+  next(err);
+}
 
 app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
   const _t = Date.now();
@@ -399,5 +419,7 @@ app.post('/verify-pack', upload.single('pack'), async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+
+app.use(handleMulterError);
 
 app.listen(process.env.PORT || 3000, () => log("info", "server.start", { port: process.env.PORT || 3000 }));
