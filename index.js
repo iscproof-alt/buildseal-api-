@@ -126,7 +126,7 @@ app.post("/seal", async (req, res) => {
   fs.writeFileSync(tmpContent, artifact_hash);
 
   const binPath = __dirname + '/isc_pack_v5_bin';
-  }
+  const keyPath = KEY_PATH;
 
   let packData = null;
   let status = 'completed';
