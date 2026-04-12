@@ -470,7 +470,9 @@ app.get('/evidence/:seal_id', async (req, res) => {
     final_body: evidence.final || null,
     final_sha256: evidence.final_sha256 || null,
     final_integrity: evidence.final && finalComputed ? (finalComputed === evidence.final_sha256 ? 'OK' : 'MISMATCH') : 'N/A',
-    created_at: r.created_at
+    created_at: r.created_at,
+    pack_url: 'https://verify.buildseal.io/pack/' + r.seal_id,
+    verify_url: 'https://verify.buildseal.io/release/' + r.seal_id
   });
 });
 
