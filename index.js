@@ -434,7 +434,7 @@ app.post('/verify-pack', upload.single('pack'), async (req, res) => {
 
 app.post('/evidence/:seal_id', async (req, res) => {
   try {
-    const { mail_body, mail_body_sha256, final_body, final_body_sha256 } = req.body;
+    const { mail_body, mail_body_sha256, final_body, final_body_sha256, decision_payload } = req.body;
     if (!mail_body) return res.status(400).json({ error: 'mail_body required' });
     const computed = require('crypto').createHash('sha256').update(mail_body).digest('hex');
     if (mail_body_sha256 && computed !== mail_body_sha256) {
@@ -446,7 +446,7 @@ app.post('/evidence/:seal_id', async (req, res) => {
     }
     await pool.query(
       "UPDATE seals SET mail_body=$1, mail_body_sha256=$2 WHERE seal_id=$3",
-      [JSON.stringify({ draft: mail_body, draft_sha256: computed, final: final_body || null, final_sha256: finalComputed }), computed, req.params.seal_id]
+      [JSON.stringify({ draft: mail_body, draft_sha256: computed, final: final_body || null, final_sha256: finalComputed, decision_payload: decision_payload || null }), computed, req.params.seal_id]
     );
     log("info", "evidence.stored", { seal_id: req.params.seal_id, draft_sha256: computed, final_sha256: finalComputed });
     res.json({ seal_id: req.params.seal_id, mail_body_sha256: computed, final_body_sha256: finalComputed, stored: true });
@@ -470,6 +470,7 @@ app.get('/evidence/:seal_id', async (req, res) => {
     final_body: evidence.final || null,
     final_sha256: evidence.final_sha256 || null,
     final_integrity: evidence.final && finalComputed ? (finalComputed === evidence.final_sha256 ? 'OK' : 'MISMATCH') : 'N/A',
+    decision_payload: evidence.decision_payload || null,
     created_at: r.created_at,
     pack_url: 'https://verify.buildseal.io/pack/' + r.seal_id,
     verify_url: 'https://verify.buildseal.io/release/' + r.seal_id
