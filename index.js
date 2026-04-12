@@ -73,6 +73,8 @@ async function initDb() {
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS tsa_json TEXT`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS pack_json TEXT`);
+  await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS mail_body TEXT`);
+  await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS mail_body_sha256 TEXT`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_seals_artifact_hash ON seals(artifact_hash)`);
   log("info", "db.ready");
 log("info", "boot", { api_version: "1.0.0", engine: "isc_pack_v5", pack_version: "5.1", key_path: KEY_PATH });
@@ -428,6 +430,39 @@ app.post('/verify-pack', upload.single('pack'), async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+
+
+app.post('/evidence/:seal_id', async (req, res) => {
+  try {
+    const { mail_body, mail_body_sha256 } = req.body;
+    if (!mail_body) return res.status(400).json({ error: 'mail_body required' });
+    const computed = require('crypto').createHash('sha256').update(mail_body).digest('hex');
+    if (mail_body_sha256 && computed !== mail_body_sha256) {
+      return res.status(400).json({ error: 'INTEGRITY_MISMATCH', computed, provided: mail_body_sha256 });
+    }
+    await pool.query(
+      "UPDATE seals SET mail_body=$1, mail_body_sha256=$2 WHERE seal_id=$3",
+      [mail_body, computed, req.params.seal_id]
+    );
+    log("info", "evidence.stored", { seal_id: req.params.seal_id, sha256: computed });
+    res.json({ seal_id: req.params.seal_id, mail_body_sha256: computed, stored: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/evidence/:seal_id', async (req, res) => {
+  const { rows } = await pool.query("SELECT seal_id, mail_body, mail_body_sha256, created_at FROM seals WHERE seal_id=$1", [req.params.seal_id]);
+  if (!rows.length) return res.status(404).json({ error: 'not found' });
+  const r = rows[0];
+  if (!r.mail_body) return res.status(404).json({ error: 'no evidence stored for this seal' });
+  const computed = require('crypto').createHash('sha256').update(r.mail_body).digest('hex');
+  res.json({
+    seal_id: r.seal_id,
+    mail_body: r.mail_body,
+    mail_body_sha256: r.mail_body_sha256,
+    integrity: computed === r.mail_body_sha256 ? 'OK' : 'MISMATCH',
+    created_at: r.created_at
+  });
+});
 
 app.use(handleMulterError);
 
