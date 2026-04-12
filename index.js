@@ -389,7 +389,14 @@ app.get('/verify/:id', async (req, res) => {
   if (!rows.length) return res.status(404).json({ error: 'not found' });
   const r = rows[0];
   const { pack_json, tsa_json, verify_output_json, ...rest } = r;
-  res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_json ? JSON.parse(tsa_json) : { present: false }, verify_detail: parseVerifyOutput(verify_output_json) });
+  let decision_summary = null;
+  try {
+    if (r.mail_body) {
+      const ev = JSON.parse(r.mail_body);
+      if (ev.decision_payload) decision_summary = ev.decision_payload;
+    }
+  } catch(e) {}
+  res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_json ? JSON.parse(tsa_json) : { present: false }, verify_detail: parseVerifyOutput(verify_output_json), decision_summary, evidence_url: 'https://verify.buildseal.io/evidence/' + r.seal_id });
 });
 
 function parseVerifyOutput(raw) {
