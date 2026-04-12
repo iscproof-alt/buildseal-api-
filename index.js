@@ -434,18 +434,22 @@ app.post('/verify-pack', upload.single('pack'), async (req, res) => {
 
 app.post('/evidence/:seal_id', async (req, res) => {
   try {
-    const { mail_body, mail_body_sha256 } = req.body;
+    const { mail_body, mail_body_sha256, final_body, final_body_sha256 } = req.body;
     if (!mail_body) return res.status(400).json({ error: 'mail_body required' });
     const computed = require('crypto').createHash('sha256').update(mail_body).digest('hex');
     if (mail_body_sha256 && computed !== mail_body_sha256) {
       return res.status(400).json({ error: 'INTEGRITY_MISMATCH', computed, provided: mail_body_sha256 });
     }
+    const finalComputed = final_body ? require('crypto').createHash('sha256').update(final_body).digest('hex') : null;
+    if (final_body_sha256 && finalComputed !== final_body_sha256) {
+      return res.status(400).json({ error: 'FINAL_INTEGRITY_MISMATCH', computed: finalComputed, provided: final_body_sha256 });
+    }
     await pool.query(
       "UPDATE seals SET mail_body=$1, mail_body_sha256=$2 WHERE seal_id=$3",
-      [mail_body, computed, req.params.seal_id]
+      [JSON.stringify({ draft: mail_body, draft_sha256: computed, final: final_body || null, final_sha256: finalComputed }), computed, req.params.seal_id]
     );
-    log("info", "evidence.stored", { seal_id: req.params.seal_id, sha256: computed });
-    res.json({ seal_id: req.params.seal_id, mail_body_sha256: computed, stored: true });
+    log("info", "evidence.stored", { seal_id: req.params.seal_id, draft_sha256: computed, final_sha256: finalComputed });
+    res.json({ seal_id: req.params.seal_id, mail_body_sha256: computed, final_body_sha256: finalComputed, stored: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -454,12 +458,18 @@ app.get('/evidence/:seal_id', async (req, res) => {
   if (!rows.length) return res.status(404).json({ error: 'not found' });
   const r = rows[0];
   if (!r.mail_body) return res.status(404).json({ error: 'no evidence stored for this seal' });
-  const computed = require('crypto').createHash('sha256').update(r.mail_body).digest('hex');
+  let evidence;
+  try { evidence = JSON.parse(r.mail_body); } catch(e) { evidence = { draft: r.mail_body }; }
+  const draftComputed = require('crypto').createHash('sha256').update(evidence.draft || '').digest('hex');
+  const finalComputed = evidence.final ? require('crypto').createHash('sha256').update(evidence.final).digest('hex') : null;
   res.json({
     seal_id: r.seal_id,
-    mail_body: r.mail_body,
-    mail_body_sha256: r.mail_body_sha256,
-    integrity: computed === r.mail_body_sha256 ? 'OK' : 'MISMATCH',
+    draft_body: evidence.draft,
+    draft_sha256: evidence.draft_sha256,
+    draft_integrity: draftComputed === evidence.draft_sha256 ? 'OK' : 'MISMATCH',
+    final_body: evidence.final || null,
+    final_sha256: evidence.final_sha256 || null,
+    final_integrity: evidence.final && finalComputed ? (finalComputed === evidence.final_sha256 ? 'OK' : 'MISMATCH') : 'N/A',
     created_at: r.created_at
   });
 });
