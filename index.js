@@ -576,6 +576,32 @@ app.post('/seal-answer', async (req, res) => {
   }
 });
 
+
+// GET /proof/:seal_id — Answer Proof verify endpoint
+app.get('/proof/:seal_id', async (req, res) => {
+  const { seal_id } = req.params;
+  const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [seal_id]);
+  if (!rows.length) return res.status(404).json({ error: 'not found' });
+
+  const r = rows[0];
+  let payload = null;
+  let pack = null;
+
+  try { payload = r.payload_json ? JSON.parse(r.payload_json) : null; } catch(e) {}
+  try { pack = r.pack_json ? JSON.parse(r.pack_json) : null; } catch(e) {}
+
+  res.json({
+    seal_id: r.seal_id,
+    status: r.status,
+    sealed_at: r.created_at,
+    artifact_hash: r.artifact_hash,
+    root_hash: r.pack_hash || (pack && pack.root) || null,
+    verify_url: r.verify_url,
+    payload,
+    pack
+  });
+});
+
 app.use(handleMulterError);
 
 
