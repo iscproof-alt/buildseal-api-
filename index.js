@@ -549,7 +549,7 @@ app.post('/seal-answer', async (req, res) => {
         '--content-id', answer_id,
         '--content-file', tmpContent,
         '--key-file', KEY_PATH
-      ], { encoding: 'utf8' });
+      ], { encoding: 'utf8', cwd: '/tmp' });
       const match = out.match(/root:\s+([a-f0-9]+)/i);
       if (match) root_hash = match[1];
       if (fs.existsSync(packPath)) {
