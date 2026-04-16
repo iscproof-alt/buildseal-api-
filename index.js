@@ -484,6 +484,111 @@ app.get('/evidence/:seal_id', async (req, res) => {
   });
 });
 
+
+
+// POST /seal-answer — Answer Proof v1.1
+app.post('/seal-answer', async (req, res) => {
+  const crypto = require('crypto');
+  const fs = require('fs');
+  const path = require('path');
+  const { execFileSync } = require('child_process');
+
+  function canonicalize(value) {
+    if (value === null) return 'null';
+    const t = typeof value;
+    if (t === 'number') {
+      if (!Number.isFinite(value)) throw new Error('Non-finite number');
+      return JSON.stringify(value);
+    }
+    if (t === 'boolean') return value ? 'true' : 'false';
+    if (t === 'string') return JSON.stringify(value);
+    if (Array.isArray(value)) return '[' + value.map(canonicalize).join(',') + ']';
+    if (t === 'object') {
+      const keys = Object.keys(value).sort();
+      return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalize(value[k])).join(',') + '}';
+    }
+    throw new Error('Unsupported type: ' + t);
+  }
+
+  function stableStringify(value) {
+    return JSON.stringify(value, (_key, val) => {
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        return Object.keys(val).sort().reduce((acc, k) => { acc[k] = val[k]; return acc; }, {});
+      }
+      return val;
+    });
+  }
+
+  try {
+    const { payload } = req.body;
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return res.status(400).json({ error: 'payload object required' });
+    }
+
+    const answer_id = payload.answer_id || crypto.randomUUID();
+    const seal_id = 'ans_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    const sealed_at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    const verify_url = 'https://verify.buildseal.io/a/' + seal_id;
+
+    const proofPayload = { ...payload, answer_id, sealed_at };
+    const canonical = canonicalize(proofPayload);
+    const artifact_hash = 'sha256:' + crypto.createHash('sha256').update(canonical, 'utf8').digest('hex');
+
+    const tmpContent = path.join('/tmp', seal_id + '.content');
+    const packPath = path.join('/tmp', seal_id + '_v5_pack.json');
+    fs.writeFileSync(tmpContent, artifact_hash, 'utf8');
+
+    const binPath = path.join(__dirname, 'isc_pack_v5_bin');
+    let root_hash = null;
+    let pack_json = null;
+    let seal_status = 'sealed';
+    let seal_error = null;
+
+    try {
+      const out = execFileSync(binPath, [
+        '--content-id', answer_id,
+        '--content-file', tmpContent,
+        '--key-file', KEY_PATH
+      ], { encoding: 'utf8' });
+      const match = out.match(/root:\s+([a-f0-9]+)/i);
+      if (match) root_hash = match[1];
+      if (fs.existsSync(packPath)) {
+        pack_json = fs.readFileSync(packPath, 'utf8');
+        fs.unlinkSync(packPath);
+      }
+    } catch (e) {
+      seal_status = 'degraded';
+      seal_error = e.message || 'binary sealing failed';
+    } finally {
+      if (fs.existsSync(tmpContent)) fs.unlinkSync(tmpContent);
+      if (fs.existsSync(packPath)) fs.unlinkSync(packPath);
+    }
+
+    await pool.query(
+      `INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, evidence_pack_url, status, pack_json, payload_json)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [seal_id, artifact_hash, 'answer-proof', answer_id, verify_url, verify_url, seal_status, pack_json, stableStringify(proofPayload)]
+    );
+
+    return res.json({ status: seal_status, seal_id, answer_id, verify_url, sealed_at, root_hash, artifact_hash, warning: seal_error });
+  } catch (err) {
+    return res.status(500).json({ error: 'seal-answer failed', detail: err.message });
+  }
+});
+
 app.use(handleMulterError);
 
-app.listen(process.env.PORT || 3000, () => log("info", "server.start", { port: process.env.PORT || 3000 }));
+
+async function ensureProofSchema() {
+  await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS payload_json TEXT`);
+}
+
+ensureProofSchema()
+  .then(() => {
+    console.log('[OK] proof schema ready');
+    app.listen(process.env.PORT || 3000, () => log("info", "server.start", { port: process.env.PORT || 3000 }));
+  })
+  .catch(err => {
+    console.error('[ERROR] proof schema migration failed:', err.message);
+    process.exit(1);
+  });
