@@ -545,15 +545,15 @@ app.post('/seal-answer', async (req, res) => {
     let seal_error = null;
 
     try {
-      const out = execFileSync(binPath, [
-        '--content-id', answer_id,
-        '--content-file', tmpContent,
-        '--key-file', KEY_PATH
-      ], { encoding: 'utf8', cwd: '/tmp' });
-      const match = out.match(/root:\s+([a-f0-9]+)/i);
-      if (match) root_hash = match[1];
+      const { execSync: execSyncLocal } = require('child_process');
+      execSyncLocal(
+        `cd /tmp && ${binPath} ${tmpContent} seal ${seal_id} --key ${KEY_PATH} --sealed-at "${sealed_at}"`,
+        { encoding: 'utf8' }
+      );
       if (fs.existsSync(packPath)) {
-        pack_json = fs.readFileSync(packPath, 'utf8');
+        const packData = JSON.parse(fs.readFileSync(packPath, 'utf8'));
+        root_hash = packData.root || null;
+        pack_json = JSON.stringify(packData);
         fs.unlinkSync(packPath);
       }
     } catch (e) {
