@@ -602,6 +602,121 @@ app.get('/proof/:seal_id', async (req, res) => {
   });
 });
 
+
+// GET /seal/:id/evidence-package — Download .iscproof evidence package
+app.get('/seal/:id/evidence-package', async (req, res) => {
+  const seal_id = req.params.id;
+  try {
+    const r = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [seal_id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'not_found' });
+    const row = r.rows[0];
+
+    const archiver = require('archiver');
+    const pack_json = row.pack_json ? JSON.parse(row.pack_json) : {};
+    const tsa_json  = row.tsa_json  ? JSON.parse(row.tsa_json)  : {};
+    const sealed_at = row.sealed_at || row.created_at || new Date().toISOString();
+
+    // decision.json — from pack_json fields
+    const decision_json = {
+      seal_id,
+      decision:    pack_json.decision    || null,
+      reason_code: pack_json.reason_code || null,
+      subject_ref: pack_json.subject_ref || null,
+      subject_type: pack_json.subject_type || null,
+      risk_score:  pack_json.risk_score  || null,
+      model:       pack_json.model       || null,
+      actor:       pack_json.actor       || null,
+      sealed_at,
+    };
+
+    // canonical.json
+    const canonical_json = row.artifact_hash || '';
+
+    // verify.json
+    const verify_output = row.verify_output_json ? JSON.parse(row.verify_output_json) : {};
+    const verify_json = {
+      seal_id,
+      status: row.verdict || 'PENDING',
+      signature_verified: verify_output.sig_valid || false,
+      root_hash_match:    verify_output.root_match || false,
+      tsa_verified:       verify_output.tsa_verified || false,
+      offline_verifiable: true,
+      verify_url: `https://buildseal.io/release/${seal_id}`,
+      verified_at: row.verified_at || sealed_at,
+    };
+
+    // manifest.json
+    const manifest = {
+      package_version: '1.0',
+      package_type: 'buildseal_decision_evidence',
+      seal_id,
+      sealed_at,
+      primary_decision_file: 'decision.json',
+      canonical_file: 'canonical.json',
+      evidence_pack_file: 'evidence-pack.json',
+      verify_file: 'verify.json',
+      checksums_file: 'checksums.txt',
+      human_summary: 'human/summary.txt',
+      verify_url: `https://buildseal.io/release/${seal_id}`,
+    };
+
+    // checksums
+    const crypto = require('crypto');
+    const files = {
+      'manifest.json':      JSON.stringify(manifest, null, 2),
+      'decision.json':      JSON.stringify(decision_json, null, 2),
+      'canonical.json':     canonical_json,
+      'evidence-pack.json': JSON.stringify(pack_json, null, 2),
+      'verify.json':        JSON.stringify(verify_json, null, 2),
+    };
+    const checksums = Object.entries(files)
+      .map(([fname, content]) => {
+        const hash = crypto.createHash('sha256').update(content).digest('hex');
+        return `${hash}  ${fname}`;
+      }).join('\n');
+    files['checksums.txt'] = checksums;
+
+    // human/summary.txt
+    const summary = [
+      'BuildSeal Decision Evidence Record',
+      '===================================',
+      `Seal ID:    ${seal_id}`,
+      `Decision:   ${decision_json.decision || 'N/A'}`,
+      `Reason:     ${decision_json.reason_code || 'N/A'}`,
+      `Subject:    ${decision_json.subject_ref || 'N/A'}`,
+      `Sealed At:  ${sealed_at}`,
+      '',
+      'Cryptographic Verification',
+      '--------------------------',
+      `Signature:  ${verify_json.signature_verified ? 'VERIFIED' : 'NOT VERIFIED'}`,
+      `Root Hash:  ${verify_json.root_hash_match ? 'MATCHED' : 'MISMATCH'}`,
+      `Timestamp:  ${verify_json.tsa_verified ? 'RFC 3161 VERIFIED' : 'NOT VERIFIED'}`,
+      '',
+      `Verify URL: https://buildseal.io/release/${seal_id}`,
+      '',
+      'This record is cryptographically sealed and tamper-evident.',
+      'BuildSeal · ISCProof v5.1',
+    ].join('\n');
+
+    const filename = `buildseal_decision_${seal_id}.iscproof`;
+    res.setHeader('Content-Type', 'application/vnd.buildseal.iscproof+zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(res);
+
+    for (const [fname, content] of Object.entries(files)) {
+      archive.append(content, { name: fname });
+    }
+    archive.append(summary, { name: 'human/summary.txt' });
+    await archive.finalize();
+
+  } catch (err) {
+    log('error', 'evidence_package.error', { seal_id, error: err.message });
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  }
+});
+
 app.use(handleMulterError);
 
 
