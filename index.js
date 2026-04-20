@@ -612,8 +612,8 @@ app.get('/seal/:id/evidence-package', async (req, res) => {
     const row = r.rows[0];
 
     const archiver = require('archiver');
-    const pack_json = row.pack_json ? JSON.parse(row.pack_json) : {};
-    const tsa_json  = row.tsa_json  ? JSON.parse(row.tsa_json)  : {};
+    const pack_json = row.pack_json ? (typeof row.pack_json === 'string' ? (() => { try { return JSON.parse(row.pack_json); } catch(e) { return {}; } })() : row.pack_json) : {};
+    const tsa_json  = row.tsa_json  ? (typeof row.tsa_json === 'string' ? (() => { try { return JSON.parse(row.tsa_json); } catch(e) { return {}; } })() : row.tsa_json) : {};
     const sealed_at = row.sealed_at || row.created_at || new Date().toISOString();
 
     // decision.json — from pack_json fields
@@ -633,7 +633,7 @@ app.get('/seal/:id/evidence-package', async (req, res) => {
     const canonical_json = row.artifact_hash || '';
 
     // verify.json
-    const verify_output = row.verify_output_json ? JSON.parse(row.verify_output_json) : {};
+    const verify_output = row.verify_output_json ? (typeof row.verify_output_json === 'string' ? (() => { try { return JSON.parse(row.verify_output_json); } catch(e) { return {}; } })() : row.verify_output_json) : {};
     const verify_json = {
       seal_id,
       status: row.verdict || 'PENDING',
