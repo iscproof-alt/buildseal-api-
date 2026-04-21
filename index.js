@@ -134,7 +134,7 @@ app.post("/seal", async (req, res) => {
 
   const seal_id = "seal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
   const verify_url = (process.env.BASE_URL || "https://buildseal-api-production-3ca5.up.railway.app") + "/seal/" + seal_id;
-  const evidence_pack_url = "https://verify.buildseal.io/pack/" + seal_id;
+  const evidence_pack_url = "https://buildseal.io/pack/" + seal_id;
   const sealed_at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
   await pool.query(
@@ -255,8 +255,8 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
     if (file.size === 0) return res.status(400).json({ error: 'empty file', code: 'EMPTY_FILE' });
 
     const seal_id = 'seal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-    const verify_url = 'https://verify.buildseal.io/release/' + seal_id;
-    const evidence_pack_url = 'https://verify.buildseal.io/pack/' + seal_id;
+    const verify_url = 'https://buildseal.io/release/' + seal_id;
+    const evidence_pack_url = 'https://buildseal.io/pack/' + seal_id;
 
     await pool.query(
       "INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, evidence_pack_url, status, verdict) VALUES ($1,$2,$3,$4,$5,$6,'PROCESSING','PENDING')",
@@ -396,7 +396,7 @@ app.get('/verify/:id', async (req, res) => {
       if (ev.decision_payload) decision_summary = ev.decision_payload;
     }
   } catch(e) {}
-  res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_json ? JSON.parse(tsa_json) : { present: false }, verify_detail: parseVerifyOutput(verify_output_json), decision_summary, evidence_url: 'https://verify.buildseal.io/evidence/' + r.seal_id });
+  res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_json ? JSON.parse(tsa_json) : { present: false }, verify_detail: parseVerifyOutput(verify_output_json), decision_summary, evidence_url: 'https://buildseal.io/evidence/' + r.seal_id });
 });
 
 function parseVerifyOutput(raw) {
@@ -479,8 +479,8 @@ app.get('/evidence/:seal_id', async (req, res) => {
     final_integrity: evidence.final && finalComputed ? (finalComputed === evidence.final_sha256 ? 'OK' : 'MISMATCH') : 'N/A',
     decision_payload: evidence.decision_payload || null,
     created_at: r.created_at,
-    pack_url: 'https://verify.buildseal.io/pack/' + r.seal_id,
-    verify_url: 'https://verify.buildseal.io/release/' + r.seal_id
+    pack_url: 'https://buildseal.io/pack/' + r.seal_id,
+    verify_url: 'https://buildseal.io/release/' + r.seal_id
   });
 });
 
@@ -528,7 +528,7 @@ app.post('/seal-answer', async (req, res) => {
     const answer_id = payload.answer_id || crypto.randomUUID();
     const seal_id = 'ans_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
     const sealed_at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
-    const verify_url = 'https://verify.buildseal.io/a/' + seal_id;
+    const verify_url = 'https://buildseal.io/a/' + seal_id;
 
     const proofPayload = { ...payload, answer_id, sealed_at };
     const canonical = canonicalize(proofPayload);
