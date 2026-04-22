@@ -180,14 +180,23 @@ app.post("/seal", async (req, res) => {
 
   try { fs.unlinkSync(tmpContent); } catch(_) {}
 
+  // Fix verify_url to use buildseal.io
+  const public_verify_url = "https://buildseal.io/release/" + seal_id;
+  await pool.query("UPDATE seals SET verify_url=$1 WHERE seal_id=$2", [public_verify_url, seal_id]);
+
   res.json({
     seal_id,
-    status,
-    verify_url,
-    timestamp: sealed_at,
-    root: packData?.root || null,
+    verdict: status === 'completed' ? 'VALID' : 'FAILED',
+    verify_url: public_verify_url,
+    evidence_pack_url: "https://buildseal.io/pack/" + seal_id,
+    sealed_at,
+    root_hash: packData?.root || null,
     content_hash: packData?.content_hash || null,
-    tsa: null
+    tsa: tsaResult ? {
+      present: true,
+      provider: "freetsa",
+      time: tsaResult.gen_time || sealed_at
+    } : null
   });
 });
 
