@@ -153,6 +153,7 @@ app.post("/seal", async (req, res) => {
 
   let packData = null;
   let status = 'completed';
+  let tsaResult = null;
 
   try {
     execSync(
