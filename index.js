@@ -161,7 +161,7 @@ app.post("/seal", async (req, res) => {
       { encoding: 'utf8' }
     );
     const packPath = `/tmp/${seal_id}_v5_pack.json`;
-    let tsaResult = { present: false, provider: 'freetsa' };
+    tsaResult = { present: false, provider: 'freetsa' };
     try {
       const packJson = JSON.parse(require('fs').readFileSync(packPath, 'utf8'));
       const root = packJson.root || '';
@@ -283,7 +283,7 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
     );
 
     const packPath = `${packDir}/${seal_id}_v5_pack.json`;
-    let tsaResult = { present: false, provider: 'freetsa' };
+    tsaResult = { present: false, provider: 'freetsa' };
     try {
       const packJsonTsa = JSON.parse(require('fs').readFileSync(`${packDir}/${seal_id}_v5_pack.json`, 'utf8'));
       const rootHash = packJsonTsa.root || '';
