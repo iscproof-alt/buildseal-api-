@@ -416,7 +416,7 @@ function parseVerifyOutput(raw) {
   for (const line of lines) {
     if (line.includes('PACK VERIFIED')) result.verified = true;
     if (line.includes('VERIFICATION FAILED')) { result.verified = false; result.failed = true; }
-    const m = line.match(/^(\w+):\s+(.+)/);
+    const m = line.match(/^\s*(\w+):\s+(.+)/);
     if (m) result.fields[m[1].trim()] = m[2].trim();
     const code = line.match(/^Code:\s+(.+)/);
     if (code) result.error_code = code[1].trim();
