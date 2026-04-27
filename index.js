@@ -351,15 +351,24 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
 
 
 app.post('/verify-by-hash', async (req, res) => {
-  const { artifact_hash } = req.body;
+  const { artifact_hash, seal_id } = req.body;
   if (!artifact_hash) return res.status(400).json({ found: false, error: "artifact_hash required" });
   const { rows } = await pool.query(
     "SELECT * FROM seals WHERE artifact_hash=$1 ORDER BY created_at DESC LIMIT 1",
     [artifact_hash]
   );
+  const tsa_row = rows[0];
+  const tsa = tsa_row && tsa_row.tsa_json ? JSON.parse(tsa_row.tsa_json) : { present: false };
+  if (seal_id) {
+    const { rows: sealRows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [seal_id]);
+    if (!sealRows.length) return res.json({ found: false, error: "seal_id not found" });
+    const s = sealRows[0];
+    const hash_match = s.artifact_hash === artifact_hash;
+    const matched_other = !hash_match && tsa_row ? tsa_row.seal_id : null;
+    return res.json({ found: true, seal_id: s.seal_id, hash_match, matched_other_seal: matched_other, verify_url: s.verify_url, artifact_hash: s.artifact_hash, tsa });
+  }
   if (!rows.length) return res.json({ found: false });
   const r = rows[0];
-  const tsa = r.tsa_json ? JSON.parse(r.tsa_json) : { present: false };
   res.json({
     found: true,
     seal_id: r.seal_id,
