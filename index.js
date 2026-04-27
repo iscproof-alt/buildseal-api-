@@ -414,7 +414,7 @@ function parseVerifyOutput(raw) {
   const lines = raw.split('\n').filter(Boolean);
   const result = { raw, verified: false, fields: {} };
   for (const line of lines) {
-    if (line.includes('PACK VERIFIED')) result.verified = true;
+    if (line.includes('PACK VERIFIED') || line.trim() === 'VALID') result.verified = true;
     if (line.includes('VERIFICATION FAILED')) { result.verified = false; result.failed = true; }
     const m = line.match(/^\s*(\w+):\s+(.+)/);
     if (m) result.fields[m[1].trim()] = m[2].trim();
