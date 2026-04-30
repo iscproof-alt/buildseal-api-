@@ -752,3 +752,99 @@ ensureProofSchema()
     console.error('[ERROR] proof schema migration failed:', err.message);
     process.exit(1);
   });
+
+// POST /seal/decision — AI decision evidence sealing
+app.post('/seal/decision', async (req, res) => {
+  const {
+    actor,
+    decision_type,
+    input_ref,
+    decision,
+    reason_code,
+    model_version,
+    policy_version
+  } = req.body;
+
+  if (!actor || !decision || !decision_type) {
+    return res.status(400).json({ ok: false, error: "actor, decision_type, decision required" });
+  }
+
+  const fs = require('fs');
+  const path = require('path');
+  const { execSync } = require('child_process');
+  const crypto = require('crypto');
+
+  const sealed_at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  const seal_id = "seal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+
+  const evidence = {
+    evidence_type: "ai_decision",
+    actor: actor,
+    decision_type: decision_type,
+    input_ref: input_ref || null,
+    decision: decision,
+    reason_code: reason_code || null,
+    model_version: model_version || null,
+    policy_version: policy_version || null,
+    created_at: sealed_at
+  };
+
+  const evidenceJson = JSON.stringify(evidence, Object.keys(evidence).sort());
+  const artifact_hash = crypto.createHash('sha256').update(evidenceJson).digest('hex');
+
+  const tmpContent = path.join('/tmp', seal_id + '.content');
+  fs.writeFileSync(tmpContent, evidenceJson);
+
+  const binPath = __dirname + '/isc_pack_v5_bin';
+  const keyPath = KEY_PATH;
+
+  let packData = null;
+  let status = 'completed';
+  let tsaResult = null;
+
+  try {
+    await pool.query(
+      "INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, evidence_pack_url, status) VALUES ($1,$2,$3,$4,$5,$6,'processing')",
+      [seal_id, artifact_hash, 'decision', decision_type, '', '']
+    );
+
+    const packJson = execSync(
+      `cd /tmp && ${binPath} ${tmpContent} seal ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
+      { timeout: 30000 }
+    ).toString().trim();
+
+    packData = JSON.parse(packJson);
+    tsaResult = packData.tsa || null;
+
+    await pool.query(
+      "UPDATE seals SET status='completed', root_hash=$1 WHERE seal_id=$2",
+      [packData.root || null, seal_id]
+    );
+
+    // store evidence body
+    await pool.query(
+      "INSERT INTO evidence (seal_id, body) VALUES ($1,$2) ON CONFLICT (seal_id) DO UPDATE SET body=$2",
+      [seal_id, JSON.stringify(evidence)]
+    ).catch(() => {});
+
+  } catch(e) {
+    status = 'failed';
+    await pool.query("UPDATE seals SET status='failed' WHERE seal_id=$1", [seal_id]);
+  }
+
+  try { fs.unlinkSync(tmpContent); } catch(_) {}
+
+  const verify_url = "https://buildseal.io/release/" + seal_id;
+  await pool.query("UPDATE seals SET verify_url=$1 WHERE seal_id=$2", [verify_url, seal_id]);
+
+  res.json({
+    ok: status === 'completed',
+    seal_id,
+    verify_url,
+    root_hash: packData?.root || null,
+    timestamped: !!tsaResult,
+    evidence_type: "ai_decision",
+    decision,
+    sealed_at
+  });
+});
