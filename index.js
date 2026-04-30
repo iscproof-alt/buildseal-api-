@@ -802,18 +802,25 @@ app.post('/seal/decision', async (req, res) => {
   let status = 'completed';
   let tsaResult = null;
 
+  // DB - best effort
   try {
     await pool.query(
       "INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, evidence_pack_url, status) VALUES ($1,$2,$3,$4,$5,$6,'processing')",
       [seal_id, artifact_hash, 'decision', decision_type, '', '']
     );
+  } catch(dbErr) {
+    console.warn("DB insert failed:", dbErr.message);
+  }
 
-    const packJson = execSync(
+  // SEALING - core, DB bagimsiz
+  try {
+    execSync(
       `cd /tmp && ${binPath} ${tmpContent} seal ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
       { timeout: 30000 }
-    ).toString().trim();
-
-    packData = JSON.parse(packJson);
+    );
+    const packFile = `/tmp/${seal_id}_v5_pack.json`;
+    packData = JSON.parse(require('fs').readFileSync(packFile, 'utf8'));
+    try { require('fs').unlinkSync(packFile); } catch(_) {}
     tsaResult = packData.tsa || null;
 
     await pool.query(
