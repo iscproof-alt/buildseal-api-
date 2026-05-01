@@ -821,8 +821,31 @@ app.post('/seal/decision', async (req, res) => {
     );
     const packFile = `/tmp/${seal_id}_v5_pack.json`;
     packData = JSON.parse(require('fs').readFileSync(packFile, 'utf8'));
+
+    try {
+      if (packData.root) {
+        tsaResult = await requestTSA(packData.root);
+        if (tsaResult && tsaResult.present) {
+          packData.tsa = {
+            present: true,
+            provider: tsaResult.provider || 'freetsa',
+            time: tsaResult.time || null,
+            token_b64: tsaResult.token_b64 || ''
+          };
+        } else {
+          packData.tsa = {
+            present: false,
+            provider: 'freetsa',
+            error: tsaResult?.error || 'TSA unavailable'
+          };
+        }
+      }
+    } catch (e) {
+      tsaResult = { present: false, provider: 'freetsa', error: e.message };
+      packData.tsa = tsaResult;
+    }
+
     try { require('fs').unlinkSync(packFile); } catch(_) {}
-    tsaResult = packData.tsa || null;
 
     await pool.query(
       "UPDATE seals SET status='completed', root_hash=$1 WHERE seal_id=$2",
