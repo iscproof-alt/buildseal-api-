@@ -106,7 +106,7 @@ const KEY_PATH = (() => {
   }
 })();
 
-initDb();
+initDb().catch(e => console.error("DB init failed, continuing:", e.message));
 
 const app = express();
 app.use(cors());
