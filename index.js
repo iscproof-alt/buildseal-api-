@@ -876,6 +876,7 @@ app.post('/seal/decision', async (req, res) => {
     timestamped: !!tsaResult,
     evidence_type: "ai_decision",
     decision,
-    sealed_at
+    sealed_at,
+    build_commit: "c9a3db8"
   });
 });
