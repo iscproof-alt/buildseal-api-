@@ -299,6 +299,7 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
         algorithm: 'sha256',
         token_b64: tsaResult.token_b64 || ''
       };
+    require('fs').writeFileSync(packPath, JSON.stringify(packData, null, 2));
       require('fs').writeFileSync(`${packDir}/${seal_id}_v5_pack.json`, JSON.stringify(packData, null, 2));
     } catch(e) { log("error", "tsa.pack_write_failed", { error: e.message }); }
 

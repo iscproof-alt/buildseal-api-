@@ -1,0 +1,193 @@
+
+
+
+sed -i 's/verify_url: r.verify_url/verify_url: r.verify_url,\n    root: r.pack_hash || null/' ~/buildseal-api/index.js && grep -n "root\|verify_url" ~/buildseal-api/index.js | headsed -i 's/verify_url: r.verify_url/verify_url: r.verify_url,\n    root: r.pack_hash || null/' ~/buildseal-api/index.js && grep -n "root\|verify_url" ~/buildseal-api/index.js | headcrequire("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const { Pool } = require("pg");
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+async function initDb() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS seals (
+      seal_id TEXT PRIMARY KEY,
+      artifact_hash TEXT,
+      repo TEXT,
+      commit_hash TEXT,
+      status TEXT DEFAULT 'queued',
+      created_at TIMESTAMP DEFAULT NOW(),
+      verify_url TEXT
+    )
+  `);
+  await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS pack_hash TEXT`);
+  await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS evidence_pack_url TEXT`);
+  console.log("DB ready");
+}
+initDb();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(require('express').static(require('path').join(__dirname, 'public')));
+
+app.get("/health", (req, res) => res.json({ status: "ok", db: true }));
+
+app.get("/download/isc_verify", (req, res) => {
+  res.download(__dirname + "/public/isc_verify", "isc_verify");
+});
+
+app.post("/seal", async (req, res) => {
+  const { artifact_hash, repo, commit, filename } = req.body;
+  if (!artifact_hash) return res.status(400).json({ error: "artifact_hash required" });
+
+  const seal_id = "seal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+  const verify_url = (process.env.BASE_URL || "https://buildseal-api-production-3ca5.up.railway.app") + "/seal/" + seal_id;
+  const sealed_at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+
+  await pool.query(
+    "INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, status) VALUES ($1,$2,$3,$4,$5,'processing')",
+    [seal_id, artifact_hash, repo || 'web', commit || 'direct', verify_url]
+  );
+
+  const fs = require('fs');
+  const path = require('path');
+  const { execSync } = require('child_process');
+  const tmpContent = path.join('/tmp', seal_id + '.content');
+  fs.writeFileSync(tmpContent, artifact_hash);
+
+  const binPath = __dirname + '/isc_pack_v5_bin';
+  // Key: Render secret file > env var > local
+  let keyPath;
+  if (require('fs').existsSync('/etc/secrets/buildseal.key.json')) {
+    keyPath = '/etc/secrets/buildseal.key.json';
+  } else if (process.env.BUILDSEAL_KEY_JSON) {
+    const fs = require('fs');
+    keyPath = '/tmp/buildseal_runtime.key.json';
+    fs.writeFileSync(keyPath, process.env.BUILDSEAL_KEY_JSON);
+  } else {
+    keyPath = __dirname + '/buildseal_new.key.json';
+  }
+
+  let packData = null;
+  let status = 'completed';
+
+  try {
+    execSync(
+      `cd /tmp && ${binPath} ${tmpContent} seal ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
+      { encoding: 'utf8' }
+    );
+    const packPath = `/tmp/${seal_id}_v5_pack.json`;
+    packData = JSON.parse(fs.readFileSync(packPath, 'utf8'));
+    await pool.query(
+      "UPDATE seals SET status='completed', pack_hash=$1 WHERE seal_id=$2",
+      [packData.root, seal_id]
+    );
+    try { fs.unlinkSync(packPath); } catch(_) {}
+  } catch(e) {
+    status = 'failed';
+    console.error('isc_pack_v5 error:', e.message);
+    await pool.query("UPDATE seals SET status='failed' WHERE seal_id=$1", [seal_id]);
+  }
+
+  try { fs.unlinkSync(tmpContent); } catch(_) {}
+
+  res.json({
+    seal_id,
+    status,
+    verify_url,
+    timestamp: sealed_at,
+    root: packData?.root || null,
+    content_hash: packData?.content_hash || null,
+    tsa: null
+  });
+});
+
+
+app.get("/seal/:seal_id", async (req, res) => {
+  const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [req.params.seal_id]);
+  if (!rows.length) return res.status(404).json({ error: "not found" });
+  const r = rows[0];
+  res.json({
+    seal_id: r.seal_id,
+    artifact_hash: r.artifact_hash,
+    repo: r.repo,
+    commit: r.commit_hash,
+    status: r.status,
+    created_at: r.created_at,
+    verify_url: r.verify_url
+  });
+});
+
+app.post("/seal/:seal_id/pack", async (req, res) => {
+  const { seal_id } = req.params;
+  const { pack_hash, evidence_pack_url } = req.body;
+  const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [seal_id]);
+  if (!rows.length) return res.status(404).json({ error: "not found" });
+  await pool.query(
+    "UPDATE seals SET status='verified', pack_hash=$1, evidence_pack_url=$2 WHERE seal_id=$3",
+    [pack_hash, evidence_pack_url, seal_id]
+  );
+  res.json({ seal_id, status: "unmodified", integrity: "Artifact has not changed since sealing", provenance: "Not verified — source origin is outside this proof" });
+});
+
+
+
+const { execSync } = require('child_process');
+const multer = require('multer');
+const upload = multer({ dest: '/tmp/uploads/' });
+
+app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'no file' });
+
+    const seal_id = 'seal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const verify_url = 'https://verify.buildseal.io/release/' + seal_id;
+
+    await pool.query(
+      "INSERT INTO seals (seal_id, artifact_hash, repo, commit_hash, verify_url, status, verdict) VALUES ($1,$2,$3,$4,$5,'PROCESSING','PENDING')",
+      [seal_id, '', 'web-upload', 'direct', verify_url]
+    );
+
+    const packDir = '/app';
+    const keyFile = '/app/isc_pack_v4/test_key.json';
+    const v5bin = '/app/isc_pack_v5/target/release/isc_pack_v5';
+
+    const packOut = execSync(
+      `cd ${packDir} && ${v5bin} ${file.path} iscproof/document ${seal_id} --key ${keyFile}`,
+      { encoding: 'utf8' }
+    );
+
+    const packPath = `${packDir}/${seal_id}_v5_pack.json`;
+
+    const verifyOut = execSync(
+      `python3 /app/tools/verify_pack.py ${packPath}`,
+      { encoding: 'utf8' }
+    );
+
+    const verifyJson = JSON.parse(verifyOut);
+    const verdict = verifyJson.verdict || 'INVALID';
+
+    await pool.query(
+      "UPDATE seals SET status='DONE', verdict=$1, pack_path=$2, verify_output_json=$3, verified_at=NOW(), artifact_hash=$4 WHERE seal_id=$5",
+      [verdict, packPath, verifyOut, verifyJson.hash || '', seal_id]
+    );
+
+    const pdfCmd = `cd /home/hakan/ali && source venv/bin/activate && python3 /app/tools/generate_proof_pdf.py ${packPath}`;
+    try { execSync(`bash -c "${pdfCmd}"`, { encoding: 'utf8' }); } catch(e) {}
+    res.json({ seal_id, verdict, verify_url, verify_output: verifyJson });
+
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/verify/:id', async (req, res) => {
+  const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [req.params.id]);
+  if (!rows.length) return res.status(404).json({ error: 'not found' });
+  const r = rows[0];
+  res.json({ ...r, verdict: r.verdict || 'PENDING' });
+});
+
+app.listen(process.env.PORT || 3000, () => console.log("BuildSeal API running on :3000"));

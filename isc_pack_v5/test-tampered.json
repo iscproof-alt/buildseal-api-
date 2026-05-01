@@ -1,0 +1,22 @@
+{
+  "claims": [],
+  "content_hash": {
+    "alg": "sha256",
+    "digest": "a1fff0ffefb9eace7230c24e50731f0a91c62f9cefdfe77121c2f607125dffax"
+  },
+  "content_id": "test-d1",
+  "parent": "",
+  "profile": "seal",
+  "root": "584dc26739d85607ca3cb5d69892325aa3c74bd04f65a1743aa9eea1b3552901",
+  "sealed_at": "2026-01-01T00:00:00Z",
+  "signatures": [
+    {
+      "alg": "ed25519",
+      "covers": "canonical_payload_v1",
+      "fingerprint": "a48f5c354c7bf925",
+      "public_key": "d804eab952b5384824ee287438941ff64b7982d43bf6a1de8e23b3aeb0b5cc7a",
+      "signature": "a5e622ed68fb2183464ceecdd50082e9c53d0b4cadf201019b72e328593234060bf1e262da98af2948a98ef43bb0a555ee0efc6e845fa1da03915a1c56ab9c0c"
+    }
+  ],
+  "version": 5
+}

@@ -1,0 +1,22 @@
+{
+  "claims": [],
+  "content_hash": {
+    "alg": "sha256",
+    "digest": "51657771188c79be337b816e53395d8a7c8cf20d6d64c84b9448a83d264ac9bf"
+  },
+  "content_id": "test_seal_001",
+  "pack_version": "5.1",
+  "parent": "",
+  "profile": "seal",
+  "root": "d18a2fba304096f82f3be18dd0802710e2d41eb9e93661dabe32730b54a1989a",
+  "sealed_at": "2026-04-30T19:03:36Z",
+  "signatures": [
+    {
+      "alg": "ed25519",
+      "fingerprint": "a5ec97589519d9ee",
+      "public_key": "07bef2a88534eddfed032a4d06de927af771affe8975c98c21256a7855bdc03e",
+      "signature": "a55c96655b76dbf942dd2e6722a9aa97de58e569b06b5780fcdc626d777e4423ff3b51748e9958dc423452abaf07a2564192e7834ee568bee906f7276e276e04"
+    }
+  ],
+  "version": 5
+}

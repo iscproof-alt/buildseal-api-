@@ -1,0 +1,22 @@
+{
+  "claims": [],
+  "content_hash": {
+    "alg": "sha256",
+    "digest": "8894d04c8a2875e1edb0b26232a8d784cbcdc70528c93cd895e7c02b110dc203"
+  },
+  "content_id": "cross-check-001",
+  "pack_version": "5.1",
+  "parent": "",
+  "profile": "iscproof/decision",
+  "root": "7b8dfabb353c03a1fcff6ce14791e4ccb2e5b39065d319cd5b1fe3b7b6383727",
+  "sealed_at": "2026-04-12T20:06:43Z",
+  "signatures": [
+    {
+      "alg": "ed25519",
+      "fingerprint": "a5ec97589519d9ee",
+      "public_key": "07bef2a88534eddfed032a4d06de927af771affe8975c98c21256a7855bdc03e",
+      "signature": "eadc00d02fbc1dbf58766c6c0374dcdc51023503892b28435153bff50f110ed790a63a5c13e4343cecd2c20e40d416e2ea3c90702a0fee09dc0a9ac0af7a3305"
+    }
+  ],
+  "version": 5
+}
