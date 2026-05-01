@@ -751,7 +751,6 @@ ensureProofSchema()
   })
   .catch(err => {
     console.error('[ERROR] proof schema migration failed:', err.message);
-    process.exit(1);
   });
 
 // POST /seal/decision — AI decision evidence sealing
