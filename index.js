@@ -867,8 +867,9 @@ app.post('/seal/decision', async (req, res) => {
   const verify_url = "https://buildseal.io/release/" + seal_id;
   await pool.query("UPDATE seals SET verify_url=$1 WHERE seal_id=$2", [verify_url, seal_id]);
 
+  const sealOk = !!(packData && packData.root);
   res.json({
-    ok: status === 'completed',
+    ok: sealOk,
     seal_id,
     verify_url,
     root_hash: packData?.root || null,
