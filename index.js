@@ -17,7 +17,10 @@ async function requestTSA(rootHex) {
       fs.writeFileSync(hashFile, Buffer.from(rootHex, 'hex'));
       
       // Create TSA request with openssl
-      execSync(`openssl ts -query -data ${hashFile} -sha256 -cert -no_nonce -out ${reqFile}`, { timeout: 5000 });
+      execSync(
+  `cd /tmp && ${binPath} ${tmpContent} document ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
+  { timeout: 30000 }
+);
       
       // Send to FreeTSA
       execSync(`curl -s -S -H "Content-Type: application/timestamp-query" --data-binary @${reqFile} https://freetsa.org/tsr -o ${respFile}`, { timeout: 10000 });
@@ -947,17 +950,7 @@ app.post('/seal/decision', async (req, res) => {
     console.warn("DB insert failed:", dbErr.message);
   }
 
-  // SEALING - core, DB bagimsiz
-  try {
-    execSync(
-      `cd /tmp `cd /tmp && ${binPath} ${tmpContent} decision ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"``cd /tmp && ${binPath} ${tmpContent} decision ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"` ${binPath} ${tmpContent} document ${seal_id} --key ${keyPath}`,
-      { timeout: 30000 }
-    );
-    const packFile = `/tmp/${seal_id}_v5_pack.json`;
-    packData = JSON.parse(require('fs').readFileSync(packFile, 'utf8'));
-
-    // TSA is now produced by isc_pack_v5_bin itself.
-    // Do not call requestTSA here; preserve the RFC3161 token written by the engine.
+    execSync(`cd /tmp && ${binPath} ${tmpContent} document ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`, { timeout: 30000 });
     tsaResult = packData.tsa || null;
 
     try { require('fs').unlinkSync(packFile); } catch(_) {}
