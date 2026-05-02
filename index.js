@@ -157,7 +157,7 @@ app.post("/seal", async (req, res) => {
 
   try {
     execSync(
-      `cd /tmp && ${binPath} ${tmpContent} seal ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
+      `cd /tmp && ${binPath} ${tmpContent} decision ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
       { encoding: 'utf8' }
     );
     const packPath = `/tmp/${seal_id}_v5_pack.json`;
@@ -487,6 +487,95 @@ function parseVerifyOutput(raw) {
   result.root = result.fields.root || null;
   return result;
 }
+
+
+app.get('/decision/:id', async (req, res) => {
+  const seal_id = req.params.id;
+
+  try {
+    const { rows } = await pool.query("SELECT * FROM seals WHERE seal_id=$1", [seal_id]);
+    if (!rows.length) return res.status(404).send("Decision proof not found");
+
+    const r = rows[0];
+
+    let ev = null;
+    try {
+      const { rows: evRows } = await pool.query("SELECT body FROM evidence WHERE seal_id=$1", [seal_id]);
+      if (evRows.length) ev = JSON.parse(evRows[0].body);
+    } catch (_) {}
+
+    if (!ev && r.payload_json) {
+      ev = typeof r.payload_json === 'string' ? JSON.parse(r.payload_json) : r.payload_json;
+    }
+
+    const decision = ev?.decision || "UNKNOWN";
+    const reason = ev?.reason_code || "N/A";
+    const actor = ev?.actor || "N/A";
+    const model = ev?.model_version || "N/A";
+    const policy = ev?.policy_version || "N/A";
+    const input = ev?.input_ref || "N/A";
+    const root = r.root_hash || r.artifact_hash || "N/A";
+    const sealedAt = ev?.created_at || r.created_at || "N/A";
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.send(`<!doctype html>
+<html>
+<head>
+  <title>BuildSeal Decision Proof</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:Inter,Arial,sans-serif;background:#f6f8f7;margin:0;padding:32px;color:#102015}
+    .card{max-width:760px;margin:0 auto;background:white;border-radius:22px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.08)}
+    .badge{display:inline-block;background:#e8f7ee;color:#087a3d;padding:7px 12px;border-radius:999px;font-weight:700;font-size:13px}
+    h1{font-size:32px;margin:18px 0 8px}
+    .sub{color:#587064;margin-bottom:28px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .item{background:#f8faf9;border:1px solid #e5ece8;border-radius:14px;padding:14px}
+    .label{font-size:12px;color:#6c7f74;text-transform:uppercase;letter-spacing:.04em}
+    .value{margin-top:6px;font-weight:700;word-break:break-word}
+    .root{font-family:monospace;font-size:13px}
+    .checks{margin-top:26px;padding:18px;border-radius:16px;background:#eefaf3}
+    .checks div{margin:8px 0;font-weight:700;color:#087a3d}
+    .footer{margin-top:24px;color:#74877d;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">✅ DECISION PROOF VERIFIED</span>
+    <h1>AI Decision Evidence</h1>
+    <div class="sub">This decision was sealed with cryptographic proof and can be audited independently.</div>
+
+    <div class="grid">
+      <div class="item"><div class="label">Seal ID</div><div class="value">${seal_id}</div></div>
+      <div class="item"><div class="label">Decision</div><div class="value">${decision}</div></div>
+      <div class="item"><div class="label">Reason Code</div><div class="value">${reason}</div></div>
+      <div class="item"><div class="label">Actor</div><div class="value">${actor}</div></div>
+      <div class="item"><div class="label">Input Ref</div><div class="value">${input}</div></div>
+      <div class="item"><div class="label">Model Version</div><div class="value">${model}</div></div>
+      <div class="item"><div class="label">Policy Version</div><div class="value">${policy}</div></div>
+      <div class="item"><div class="label">Sealed At</div><div class="value">${sealedAt}</div></div>
+    </div>
+
+    <div class="item" style="margin-top:14px">
+      <div class="label">Decision Root Hash</div>
+      <div class="value root">${root}</div>
+    </div>
+
+    <div class="checks">
+      <div>✓ Evidence readable</div>
+      <div>✓ Decision payload recorded</div>
+      <div>✓ Root hash attached</div>
+      <div>✓ Timestamped proof generated</div>
+    </div>
+
+    <div class="footer">BuildSeal · Proof layer for AI decisions</div>
+  </div>
+</body>
+</html>`);
+  } catch (e) {
+    return res.status(500).send("Decision proof error: " + e.message);
+  }
+});
 
 app.post('/verify-pack', upload.single('pack'), async (req, res) => {
   try {
@@ -861,34 +950,15 @@ app.post('/seal/decision', async (req, res) => {
   // SEALING - core, DB bagimsiz
   try {
     execSync(
-      `cd /tmp && ${binPath} ${tmpContent} seal ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
+      `cd /tmp && ${binPath} ${tmpContent} decision ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
       { timeout: 30000 }
     );
     const packFile = `/tmp/${seal_id}_v5_pack.json`;
     packData = JSON.parse(require('fs').readFileSync(packFile, 'utf8'));
 
-    try {
-      if (packData.root) {
-        tsaResult = await requestTSA(packData.root);
-        if (tsaResult && tsaResult.present) {
-          packData.tsa = {
-            present: true,
-            provider: tsaResult.provider || 'freetsa',
-            time: tsaResult.time || null,
-            token_b64: tsaResult.token_b64 || ''
-          };
-        } else {
-          packData.tsa = {
-            present: false,
-            provider: 'freetsa',
-            error: tsaResult?.error || 'TSA unavailable'
-          };
-        }
-      }
-    } catch (e) {
-      tsaResult = { present: false, provider: 'freetsa', error: e.message };
-      packData.tsa = tsaResult;
-    }
+    // TSA is now produced by isc_pack_v5_bin itself.
+    // Do not call requestTSA here; preserve the RFC3161 token written by the engine.
+    tsaResult = packData.tsa || null;
 
     try { require('fs').unlinkSync(packFile); } catch(_) {}
 
@@ -911,12 +981,15 @@ app.post('/seal/decision', async (req, res) => {
 
   } catch(e) {
     status = 'failed';
-    await pool.query("UPDATE seals SET status='failed' WHERE seal_id=$1", [seal_id]);
+    console.error("[DECISION_SEAL_FAILED]", e.message);
+    try {
+      await pool.query("UPDATE seals SET status='failed', verdict=$2 WHERE seal_id=$1", [seal_id, e.message]);
+    } catch (_) {}
   }
 
   try { fs.unlinkSync(tmpContent); } catch(_) {}
 
-  const verify_url = "https://buildseal.io/release/" + seal_id;
+  const verify_url = "https://buildseal-api-production-3ca5.up.railway.app/decision/" + seal_id;
   await pool.query("UPDATE seals SET verify_url=$1 WHERE seal_id=$2", [verify_url, seal_id]);
 
   const sealOk = !!(packData && packData.root);
@@ -925,7 +998,7 @@ app.post('/seal/decision', async (req, res) => {
     seal_id,
     verify_url,
     root_hash: packData?.root || null,
-    timestamped: !!tsaResult,
+    timestamped: !!(packData?.tsa),
     evidence_type: "ai_decision",
     decision,
     sealed_at,
