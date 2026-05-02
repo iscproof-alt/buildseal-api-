@@ -192,6 +192,7 @@ app.post("/seal", async (req, res) => {
     evidence_pack_url: "https://buildseal.io/pack/" + seal_id,
     sealed_at,
     root_hash: packData?.root || null,
+    tsa: packData?.tsa || null,
     content_hash: packData?.content_hash || null,
     tsa: tsaResult ? {
       present: true,
@@ -998,7 +999,8 @@ app.post('/seal/decision', async (req, res) => {
     seal_id,
     verify_url,
     root_hash: packData?.root || null,
-    timestamped: !!(packData?.tsa),
+    tsa: packData?.tsa || null,
+    timestamped: !!(packData?.tsa?.present),
     evidence_type: "ai_decision",
     decision,
     sealed_at,
