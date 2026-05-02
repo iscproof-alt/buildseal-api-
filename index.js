@@ -538,11 +538,24 @@ app.get('/decision/:id', async (req, res) => {
     .checks{margin-top:26px;padding:18px;border-radius:16px;background:#eefaf3}
     .checks div{margin:8px 0;font-weight:700;color:#087a3d}
     .footer{margin-top:24px;color:#74877d;font-size:13px}
-  </style>
+  
+.tsa-box{margin-top:16px;padding:14px;border-radius:12px;background:#f0f7ff;border:1px solid #d6e8ff}
+.tsa-title{font-size:12px;font-weight:700;color:#2b5fd9;margin-bottom:4px}
+.tsa-time{font-size:16px;font-weight:700;color:#102015}
+.tsa-meta{font-size:11px;color:#6b7a90}
+</style>
+
 </head>
 <body>
   <div class="card">
-    <span class="badge">✅ DECISION PROOF VERIFIED</span>
+    <span class="badge">✓ Verified & Time-Proven</span>
+
+<div class="tsa-box">
+  <div class="tsa-title">Trusted Timestamp</div>
+  <div class="tsa-time">${tsa?.time || "—"}</div>
+  <div class="tsa-meta">Issued by ${tsa?.provider || "—"}</div>
+</div>
+
     <h1>AI Decision Evidence</h1>
     <div class="sub">This decision was sealed with cryptographic proof and can be audited independently.</div>
 
