@@ -71,6 +71,7 @@ async function initDb() {
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS pack_path TEXT`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS verify_output_json TEXT`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS root_hash TEXT`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS tsa_json TEXT`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS pack_json TEXT`);
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS mail_body TEXT`);
