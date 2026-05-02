@@ -157,7 +157,7 @@ app.post("/seal", async (req, res) => {
 
   try {
     execSync(
-      `cd /tmp && ${binPath} ${tmpContent} decision ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
+      `cd /tmp && ${binPath} ${tmpContent} document ${seal_id} --key ${keyPath}`,
       { encoding: 'utf8' }
     );
     const packPath = `/tmp/${seal_id}_v5_pack.json`;
@@ -950,7 +950,7 @@ app.post('/seal/decision', async (req, res) => {
   // SEALING - core, DB bagimsiz
   try {
     execSync(
-      `cd /tmp && ${binPath} ${tmpContent} decision ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"`,
+      `cd /tmp `cd /tmp && ${binPath} ${tmpContent} decision ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"``cd /tmp && ${binPath} ${tmpContent} decision ${seal_id} --key ${keyPath} --sealed-at "${sealed_at}"` ${binPath} ${tmpContent} document ${seal_id} --key ${keyPath}`,
       { timeout: 30000 }
     );
     const packFile = `/tmp/${seal_id}_v5_pack.json`;
