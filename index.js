@@ -464,7 +464,10 @@ app.get('/verify/:id', async (req, res) => {
       if (ev.decision_payload) decision_summary = ev.decision_payload;
     }
   } catch(e) {}
-  res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_json ? JSON.parse(tsa_json) : { present: false }, verify_detail: parseVerifyOutput(verify_output_json), decision_summary, verify_url: 'https://buildseal.io/release/' + r.seal_id, evidence_url: 'https://buildseal.io/evidence/' + r.seal_id });
+  const tsa_obj = tsa_json ? JSON.parse(tsa_json) : { present: false };
+  const vdetail = parseVerifyOutput(verify_output_json) || {};
+  if (!vdetail.tsa_verified && tsa_obj.present) vdetail.tsa_verified = true;
+  res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_obj, verify_detail: vdetail, decision_summary, verify_url: 'https://buildseal.io/release/' + r.seal_id, evidence_url: 'https://buildseal.io/evidence/' + r.seal_id });
 });
 
 function parseVerifyOutput(raw) {
