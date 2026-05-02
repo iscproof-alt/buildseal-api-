@@ -900,6 +900,7 @@ ensureProofSchema()
   })
   .catch(err => {
     console.error('[ERROR] proof schema migration failed:', err.message);
+    app.listen(process.env.PORT || 3000, () => log("info", "server.start.db_failed", { port: process.env.PORT || 3000 }));
   });
 
 // POST /seal/decision — AI decision evidence sealing
