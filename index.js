@@ -228,7 +228,7 @@ app.get("/seal/:seal_id", async (req, res) => {
         ok: true,
         status: "verified",
         seal_id: r.seal_id,
-        evidence_type: "ai_decision",
+        evidence_type: "agent_decision",
         root_hash: r.root_hash || r.artifact_hash,
         decision: ev.decision,
         actor: ev.actor,
@@ -1029,7 +1029,7 @@ app.post('/seal/decision', async (req, res) => {
     root_hash: packData?.root || null,
     tsa: packData?.tsa || null,
     timestamped: !!(packData?.tsa?.present),
-    evidence_type: "ai_decision",
+    evidence_type: "agent_decision",
     decision,
     sealed_at,
     build_commit: "c9a3db8"
