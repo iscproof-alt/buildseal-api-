@@ -19,6 +19,26 @@ fn sha256_hex(data: &[u8]) -> String {
 fn sha256_bytes(data: &[u8]) -> Vec<u8> {
     let mut h = Sha256::new(); h.update(data); h.finalize().to_vec()
 }
+// RFC 8785 canonical JSON — keys sorted recursively
+fn canonical_json(v: &serde_json::Value) -> String {
+    match v {
+        serde_json::Value::Object(map) => {
+            let mut keys: Vec<&String> = map.keys().collect();
+            keys.sort();
+            let fields: Vec<String> = keys.iter()
+                .map(|k| format!("{}:{}", serde_json::to_string(k).unwrap(), canonical_json(&map[*k])))
+                .collect();
+            format!("{{{}}}", fields.join(","))
+        }
+        serde_json::Value::Array(arr) => {
+            let items: Vec<String> = arr.iter().map(canonical_json).collect();
+            format!("[{}]", items.join(","))
+        }
+        _ => serde_json::to_string(v).unwrap(),
+    }
+}
+
+
 fn der_length(len: usize) -> Vec<u8> {
     if len < 128 { vec![len as u8] }
     else if len < 256 { vec![0x81, len as u8] }
@@ -210,7 +230,7 @@ fn main() {
         if pack["version"].as_u64().unwrap_or(0) < 5 { eprintln!("VERIFICATION FAILED\nCode: UNSUPPORTED_VERSION"); std::process::exit(1); }
         let mut rc = pack.clone();
         rc["root"] = json!(""); rc["signatures"][0]["signature"] = json!(""); rc.as_object_mut().map(|m| m.remove("tsa"));
-        let root_check = sha256_hex(serde_json::to_string(&rc).unwrap().as_bytes());
+        let root_check = sha256_hex(canonical_json(&rc).as_bytes());
         let stored_root = pack["root"].as_str().unwrap_or("");
         if root_check != stored_root { eprintln!("VERIFICATION FAILED\nCode: ROOT_MISMATCH\nstored:     {}\nrecomputed: {}", stored_root, root_check); std::process::exit(1); }
         let so = &pack["signatures"][0];
@@ -249,7 +269,7 @@ fn main() {
         "sealed_at": sealed_at, "root": "",
         "signatures": [{"alg": "ed25519", "public_key": hex::encode(pb), "fingerprint": fp, "signature": ""}]
     });
-    let root = sha256_hex(serde_json::to_string(&fp_pack).unwrap().as_bytes());
+    let root = sha256_hex(canonical_json(&fp_pack).as_bytes());
     let sig = sk.sign(hex::decode(&root).unwrap().as_slice());
     fp_pack["root"] = json!(root);
     fp_pack["signatures"][0]["signature"] = json!(hex::encode(sig.to_bytes()));
