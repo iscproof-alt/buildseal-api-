@@ -916,7 +916,12 @@ app.post('/seal/decision', async (req, res) => {
     decision,
     reason_code,
     model_version,
-    policy_version
+    policy_version,
+    input_hash,
+    prompt_version,
+    system_prompt_hash,
+    tool_trace_hash,
+    decision_output_hash
   } = req.body;
 
   if (!actor || !decision || !decision_type) {
@@ -932,10 +937,15 @@ app.post('/seal/decision', async (req, res) => {
   const seal_id = "seal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
 
   const evidence = {
-    evidence_type: "ai_decision",
+    evidence_type: "agent_decision",
     actor: actor,
     decision_type: decision_type,
     input_ref: input_ref || null,
+    input_hash: input_hash || null,
+    prompt_version: prompt_version || null,
+    system_prompt_hash: system_prompt_hash || null,
+    tool_trace_hash: tool_trace_hash || null,
+    decision_output_hash: decision_output_hash || null,
     decision: decision,
     reason_code: reason_code || null,
     model_version: model_version || null,
