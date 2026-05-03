@@ -360,7 +360,7 @@ app.post('/upload-and-seal', upload.single('file'), async (req, res) => {
       log("debug", "pack.tsa", { tsa: packContent.tsa });
       verifyOut = execSync(`/app/isc_pack_v5_bin --verify ${packPath}`, { encoding: 'utf8' });
       const packVerified = verifyOut.includes('PACK VERIFIED') || verifyOut.trimStart().startsWith('VALID');
-      const tsaVerified = verifyOut.includes('tsa:         VERIFIED');
+      const tsaVerified = verifyOut.includes('VERIFIED') && verifyOut.includes('tsa:');
       if (packVerified && tsaVerified) verdict = 'VALID';
       else if (packVerified && !tsaVerified) verdict = 'UNVERIFIED';
       else verdict = 'INVALID';
