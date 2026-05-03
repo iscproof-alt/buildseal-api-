@@ -1018,7 +1018,7 @@ app.post('/seal/decision', async (req, res) => {
 
   try { fs.unlinkSync(tmpContent); } catch(_) {}
 
-  const verify_url = "https://buildseal-api-production-3ca5.up.railway.app/decision/" + seal_id;
+  const verify_url = "https://buildseal.io/verify?id=" + seal_id;
   await pool.query("UPDATE seals SET verify_url=$1 WHERE seal_id=$2", [verify_url, seal_id]);
 
   const sealOk = !!(packData && packData.root);
