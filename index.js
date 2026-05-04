@@ -936,7 +936,9 @@ app.post('/seal/decision', async (req, res) => {
     prompt_version,
     system_prompt_hash,
     tool_trace_hash,
-    decision_output_hash
+    decision_output_hash,
+    reasons,
+    counterfactuals
   } = req.body;
 
   if (!actor || !decision || !decision_type) {
@@ -963,6 +965,8 @@ app.post('/seal/decision', async (req, res) => {
     decision_output_hash: decision_output_hash || null,
     decision: decision,
     reason_code: reason_code || null,
+    reasons: reasons || [],
+    counterfactuals: counterfactuals || [],
     model_version: model_version || null,
     policy_version: policy_version || null,
     created_at: sealed_at
