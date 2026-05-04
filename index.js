@@ -459,7 +459,22 @@ app.get('/verify/:id', async (req, res) => {
   const { pack_json, tsa_json, verify_output_json, ...rest } = r;
   let decision_summary = null;
   try {
-    if (r.mail_body) {
+    if (r.payload_json) {
+      const pj = typeof r.payload_json === 'string' ? JSON.parse(r.payload_json) : r.payload_json;
+      if (pj.evidence_type === 'agent_decision') {
+        decision_summary = {
+          decision: pj.decision,
+          decision_type: pj.decision_type,
+          actor: pj.actor,
+          input_ref: pj.input_ref,
+          reasons: pj.reasons || [],
+          counterfactuals: pj.counterfactuals || [],
+          model_version: pj.model_version,
+          policy_version: pj.policy_version
+        };
+      }
+    }
+    if (!decision_summary && r.mail_body) {
       const ev = JSON.parse(r.mail_body);
       if (ev.decision_payload) decision_summary = ev.decision_payload;
     }
