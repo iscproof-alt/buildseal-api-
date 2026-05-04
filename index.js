@@ -972,7 +972,7 @@ app.post('/seal/decision', async (req, res) => {
     created_at: sealed_at
   };
 
-  const evidenceJson = JSON.stringify(evidence, Object.keys(evidence).sort());
+  const evidenceJson = JSON.stringify(Object.fromEntries(Object.keys(evidence).sort().map(k => [k, evidence[k]])));
   const artifact_hash = crypto.createHash('sha256').update(evidenceJson).digest('hex');
 
   const tmpContent = path.join('/tmp', seal_id + '.content');
