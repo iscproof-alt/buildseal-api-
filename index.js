@@ -78,7 +78,8 @@ async function initDb() {
   await pool.query(`ALTER TABLE seals ADD COLUMN IF NOT EXISTS mail_body_sha256 TEXT`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_seals_artifact_hash ON seals(artifact_hash)`);
   log("info", "db.ready");
-log("info", "boot", { api_version: "1.0.0", engine: "isc_pack_v5", pack_version: "5.1", key_path: KEY_PATH });
+log("info", "boot", { api_version: "1.0.0", engine: "isc_pack_v5", pack_version: "5.1",
+    relations_enabled: true, key_path: KEY_PATH });
 }
 
 // Structured JSON logger
@@ -114,12 +115,14 @@ app.use(cors());
 app.use(express.json());
 app.use(require('express').static(require('path').join(__dirname, 'public')));
 
-app.get("/health", (req, res) => res.json({ status: "ok", db: true, api_version: "1.0.0", engine: "isc_pack_v5", pack_version: "5.1" }));
+app.get("/health", (req, res) => res.json({ status: "ok", db: true, api_version: "1.0.0", engine: "isc_pack_v5", pack_version: "5.1",
+    relations_enabled: true }));
 
 app.get("/version", (req, res) => res.json({
   api_version: "1.0.0",
   engine: "isc_pack_v5",
   pack_version: "5.1",
+    relations_enabled: true,
   key_fingerprint: (() => { try { return require(KEY_PATH).fingerprint || null; } catch(_) { return null; } })(),
   tsa_provider: "freetsa.org",
   tsa_protocol: "RFC 3161"
