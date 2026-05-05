@@ -938,7 +938,9 @@ app.post('/seal/decision', async (req, res) => {
     tool_trace_hash,
     decision_output_hash,
     reasons,
-    counterfactuals
+    counterfactuals,
+    policy,
+    epistemic
   } = req.body;
 
   if (!actor || !decision || !decision_type) {
@@ -969,6 +971,8 @@ app.post('/seal/decision', async (req, res) => {
     counterfactuals: counterfactuals || [],
     model_version: model_version || null,
     policy_version: policy_version || null,
+    policy: policy || null,
+    epistemic: epistemic || null,
     created_at: sealed_at
   };
 
