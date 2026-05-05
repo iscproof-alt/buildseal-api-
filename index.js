@@ -472,7 +472,8 @@ app.get('/verify/:id', async (req, res) => {
           model_version: pj.model_version,
           policy_version: pj.policy_version,
           policy: pj.policy || null,
-          epistemic: pj.epistemic || null
+          epistemic: pj.epistemic || null,
+          relations: pj.relations || []
         };
       }
     }
@@ -942,7 +943,8 @@ app.post('/seal/decision', async (req, res) => {
     reasons,
     counterfactuals,
     policy,
-    epistemic
+    epistemic,
+    relations
   } = req.body;
 
   if (!actor || !decision || !decision_type) {
@@ -975,6 +977,7 @@ app.post('/seal/decision', async (req, res) => {
     policy_version: policy_version || null,
     policy: policy || null,
     epistemic: epistemic || null,
+    relations: relations || [],
     created_at: sealed_at
   };
 
