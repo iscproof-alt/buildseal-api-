@@ -487,7 +487,10 @@ app.get('/verify/:id', async (req, res) => {
           policy_version: pj.policy_version,
           policy: pj.policy || null,
           epistemic: pj.epistemic || null,
-          relations: pj.relations || []
+          relations: pj.relations || [],
+          execution_context: pj.execution_context || null,
+          schema_version: pj.schema_version || null,
+          canonicalization: pj.canonicalization || null
         };
       }
     }
