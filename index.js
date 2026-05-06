@@ -987,11 +987,18 @@ app.post('/seal/decision', async (req, res) => {
     reason_code: reason_code || null,
     reasons: reasons || [],
     counterfactuals: counterfactuals || [],
-    model_version: model_version || null,
-    policy_version: policy_version || null,
     policy: policy || null,
     epistemic: epistemic || null,
     relations: relations || [],
+    execution_context: {
+      build_commit: BUILD_COMMIT,
+      model_version: model_version || null,
+      policy_version: policy_version || null,
+      prompt_version: prompt_version || null,
+      tool_trace_hash: tool_trace_hash || null
+    },
+    schema_version: 'decision-seal-v1',
+    canonicalization: 'JCS-RFC8785',
     created_at: sealed_at
   };
 
