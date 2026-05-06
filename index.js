@@ -53,7 +53,7 @@ const BUILD_COMMIT =
   process.env.RAILWAY_GIT_COMMIT ||
   process.env.GIT_COMMIT ||
   "unknown";
-\nconst express = require("express");
+const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
 
