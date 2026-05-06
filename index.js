@@ -47,7 +47,13 @@ async function requestTSA(rootHex) {
 }
 
 
-const express = require("express");
+
+const BUILD_COMMIT =
+  process.env.RAILWAY_GIT_COMMIT_SHA ||
+  process.env.RAILWAY_GIT_COMMIT ||
+  process.env.GIT_COMMIT ||
+  "unknown";
+\nconst express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
 
@@ -1068,6 +1074,6 @@ app.post('/seal/decision', async (req, res) => {
     evidence_type: "agent_decision",
     decision,
     sealed_at,
-    build_commit: "c9a3db8"
+    build_commit: BUILD_COMMIT
   });
 });
