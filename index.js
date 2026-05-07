@@ -527,7 +527,10 @@ function parseVerifyOutput(raw) {
   // Derived booleans — safe for UI consumption
   result.root_match = result.verified === true && result.error_code !== 'ROOT_MISMATCH';
   result.sig_valid = result.verified === true && result.error_code !== 'SIGNATURE_INVALID';
-  result.tsa_verified = typeof result.fields.tsa === 'string' && result.fields.tsa.includes('VERIFIED');
+  result.tsa_verified =
+    typeof result.fields.tsa === 'string' &&
+    result.fields.tsa.includes('VERIFIED') &&
+    !result.fields.tsa.includes('IMPRINT MISMATCH');
   result.pack_version = '5.1';
   result.root = result.fields.root || null;
   return result;
