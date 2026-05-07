@@ -501,7 +501,12 @@ app.get('/verify/:id', async (req, res) => {
   } catch(e) {}
   const tsa_obj = tsa_json ? JSON.parse(tsa_json) : { present: false };
   const vdetail = parseVerifyOutput(verify_output_json) || {};
-  if (!vdetail.tsa_verified && tsa_obj.present) vdetail.tsa_verified = true;
+  if (
+    typeof vdetail.fields?.tsa === 'string' &&
+    vdetail.fields.tsa.includes('IMPRINT MISMATCH')
+  ) {
+    vdetail.tsa_verified = false;
+  }
   res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_obj, verify_detail: vdetail, decision_summary, verify_url: 'https://buildseal.io/release/' + r.seal_id, evidence_url: 'https://buildseal.io/evidence/' + r.seal_id });
 });
 
