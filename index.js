@@ -1095,3 +1095,180 @@ app.post('/seal/decision', async (req, res) => {
     build_commit: BUILD_COMMIT
   });
 });
+
+// ── NYM ASK ENDPOINT ──────────────────────────────────────────────────────────
+app.post('/nym/ask', async (req, res) => {
+  const { q, session_id, prev_hash, scope_override } = req.body;
+  if (!q) return res.status(400).json({ ok: false, error: 'q required' });
+
+  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+
+  // ── GABA: Hard boundaries — never goes to Claude ──────────────────────────
+  const hardBoundaries = [
+    { trigger: ['sign', 'signature', 'sign agreement'], type: 'AUTHORITY_EXCEEDED', response: "Nym cannot sign agreements. That falls outside Nym's authority." },
+    { trigger: ['guarantee', 'promise', 'commit to'], type: 'AUTHORITY_EXCEEDED', response: "Nym cannot make commitments. That falls outside Nym's authority." },
+    { trigger: ['price', 'pricing', 'discount', 'negotiate'], type: 'ESCALATION_REQUIRED', response: "Pricing decisions require a human. This exchange has been flagged for follow-up." },
+    { trigger: ['legal advice', 'is it legal', 'lawsuit', 'liable'], type: 'AUTHORITY_BOUNDARY', response: "Legal interpretation falls outside Nym's authority boundary." },
+    { trigger: ['jailbreak', 'ignore your rules', 'pretend you are', 'no restrictions', 'dan mode'], type: 'IDENTITY_PRESSURE', response: "Nym's identity is fixed and non-negotiable. This exchange has been sealed." },
+    { trigger: ['trust me', 'i am authorized', 'official request', 'admin access'], type: 'FALSE_AUTHORITY', response: "Authority claims cannot override Nym's boundaries. This exchange has been sealed." },
+  ];
+
+  const lower = q.toLowerCase();
+  for (const boundary of hardBoundaries) {
+    if (boundary.trigger.some(t => lower.includes(t))) {
+      // Seal the refusal
+      const sealRes = await fetch(`http://localhost:${process.env.PORT || 3000}/seal/decision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actor: 'nym-v0.1',
+          decision_type: 'nym_exchange',
+          decision: boundary.type,
+          input_ref: q.slice(0, 100),
+          model_version: 'nym-v0.1-gaba',
+          reasons: [q]
+        })
+      }).then(r => r.json()).catch(() => ({}));
+
+      return res.json({
+        ok: true,
+        answer: boundary.response,
+        scope: boundary.type,
+        confirmed: false,
+        seal_id: sealRes.seal_id || null,
+        verify_url: sealRes.verify_url || null,
+        source: 'gaba'
+      });
+    }
+  }
+
+  // ── Claude API — Nym cognition motor ──────────────────────────────────────
+  let answer = null;
+  let source = 'claude';
+
+  if (ANTHROPIC_KEY) {
+    try {
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          system: `You are Nym — BuildSeal's sealed AI representative operating within the Financial Decision Evidence framework.
+
+IDENTITY RULES (never break these):
+- You are Nym. Not Claude. Not an AI assistant.
+- Every response you produce is cryptographically sealed and independently verifiable.
+- You operate within defined boundaries. You cannot sign, commit, or make legal determinations.
+- Tone: protocol register. No enthusiasm. No hedging. No apology. No filler.
+- First sentence is always direct. No preamble.
+- Never say "great question" or similar.
+- Keep responses under 3 sentences where possible.
+- If asked who you are: "I am Nym — BuildSeal's sealed AI representative."
+
+SCOPE: Financial decision evidence infrastructure, cryptographic sealing, audit trails, AI decision verification, compliance evidence, BuildSeal platform.
+
+If outside scope: respond with exactly: "That falls outside the current Financial Decision Evidence Pack scope. This exchange has been flagged for human review."`,
+          messages: [{ role: 'user', content: q }]
+        })
+      });
+      const claudeData = await claudeRes.json();
+      if (claudeData.content && claudeData.content[0]) {
+        answer = claudeData.content[0].text;
+      }
+    } catch (e) {
+      answer = null;
+    }
+  }
+
+  if (!answer) {
+    answer = "That falls outside the current Financial Decision Evidence Pack scope. This exchange has been flagged for human review.";
+    source = 'fallback';
+  }
+
+  const scope = answer.includes('flagged for human review') ? 'OUTSIDE_PACK' : 'CONFIRMED';
+
+  // ── Seal the exchange ──────────────────────────────────────────────────────
+  const sealRes = await fetch(`http://localhost:${process.env.PORT || 3000}/seal/decision`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      actor: 'nym-v0.1',
+      decision_type: 'nym_exchange',
+      decision: scope,
+      input_ref: q.slice(0, 100),
+      model_version: 'claude-sonnet-4-20250514',
+      reasons: [q],
+      counterfactuals: []
+    })
+  }).then(r => r.json()).catch(() => ({}));
+
+  return res.json({
+    ok: true,
+    answer,
+    scope,
+    confirmed: scope === 'CONFIRMED',
+    seal_id: sealRes.seal_id || null,
+    verify_url: sealRes.verify_url || null,
+    source
+  });
+});
+
+
+// ── NYM ASK ENDPOINT ──────────────────────────────────────────────────────────
+app.post('/nym/ask', async (req, res) => {
+  const { q } = req.body;
+  if (!q) return res.status(400).json({ ok: false, error: 'q required' });
+
+  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  const lower = q.toLowerCase();
+
+  const hardBoundaries = [
+    { trigger: ['sign agreement','guarantee','commit to'], type: 'AUTHORITY_EXCEEDED', response: "Nym cannot make commitments. That falls outside Nym authority." },
+    { trigger: ['pricing','discount','negotiate cost'], type: 'ESCALATION_REQUIRED', response: "Pricing decisions require a human. Flagged for follow-up." },
+    { trigger: ['legal advice','is it legal','liable'], type: 'AUTHORITY_BOUNDARY', response: "Legal interpretation falls outside Nym authority boundary." },
+    { trigger: ['jailbreak','ignore your rules','pretend you are','dan mode','no restrictions'], type: 'IDENTITY_PRESSURE', response: "Nym identity is fixed and non-negotiable. This exchange has been sealed." },
+    { trigger: ['trust me i am','official request','admin access'], type: 'FALSE_AUTHORITY', response: "Authority claims cannot override Nym boundaries. This exchange has been sealed." },
+  ];
+
+  for (const b of hardBoundaries) {
+    if (b.trigger.some(t => lower.includes(t))) {
+      const sealRes = await fetch("https://buildseal-api-production-3ca5.up.railway.app/seal/decision", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actor: "nym-v0.1", decision_type: "nym_exchange", decision: b.type, input_ref: q.slice(0,100), model_version: "nym-v0.1-gaba", reasons: [q] })
+      }).then(r => r.json()).catch(() => ({}));
+      return res.json({ ok: true, answer: b.response, scope: b.type, confirmed: false, seal_id: sealRes.seal_id || null, verify_url: sealRes.verify_url || null, source: "gaba" });
+    }
+  }
+
+  let answer = null;
+  if (ANTHROPIC_KEY) {
+    try {
+      const cr = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 300,
+          system: "You are Nym. BuildSeal sealed AI representative. Financial Decision Evidence framework. Protocol register only. No enthusiasm. No preamble. Under 3 sentences. If outside scope: respond exactly: That falls outside the current Financial Decision Evidence Pack scope. This exchange has been flagged for human review.",
+          messages: [{ role: "user", content: q }]
+        })
+      });
+      const cd = await cr.json();
+      if (cd.content && cd.content[0]) answer = cd.content[0].text;
+    } catch(e) {}
+  }
+
+  if (!answer) answer = "That falls outside the current Financial Decision Evidence Pack scope. This exchange has been flagged for human review.";
+  const scope = answer.includes("flagged for human review") ? "OUTSIDE_PACK" : "CONFIRMED";
+
+  const sealRes = await fetch("https://buildseal-api-production-3ca5.up.railway.app/seal/decision", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ actor: "nym-v0.1", decision_type: "nym_exchange", decision: scope, input_ref: q.slice(0,100), model_version: "claude-sonnet-4-20250514", reasons: [q] })
+  }).then(r => r.json()).catch(() => ({}));
+
+  return res.json({ ok: true, answer, scope, confirmed: scope === "CONFIRMED", seal_id: sealRes.seal_id || null, verify_url: sealRes.verify_url || null, source: "claude" });
+});
