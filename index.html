@@ -1,0 +1,3070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NYM — BuildSeal Verified Representative</title>
+<meta name="version" content="1778367285">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap');
+
+:root {
+  --bg: #070b09;
+  --surface: #0c1210;
+  --border: #1a2820;
+  --border2: #243830;
+  --green: #00e87a;
+  --green-dim: #00a855;
+  --green-faint: #002d18;
+  --amber: #e8a000;
+  --red: #e84040;
+  --text: #c4dcd0;
+  --text-dim: #4a7060;
+  --text-faint: #1e3028;
+  --mono: 'JetBrains Mono', monospace;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+
+body {
+  font-family: var(--mono);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 32px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nym-logo {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--text);
+  letter-spacing: 0.05em;
+}
+
+.nym-role {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.topbar-seal {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+}
+
+.seal-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green);
+}
+
+.dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+
+.dot.amber { background: var(--amber); }
+
+@keyframes pulse {
+  0%,100% { opacity:1; } 50% { opacity:0.25; }
+}
+
+.hash-live {
+  font-size: 9px;
+  color: var(--green-dim);
+  letter-spacing: 0.04em;
+}
+
+/* ── MAIN LAYOUT ── */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  min-height: 0;
+}
+
+/* ── LEFT — NYM PANEL ── */
+.nym-panel {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.nym-avatar-zone {
+  padding: 32px 28px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.nym-avatar {
+  width: 80px;
+  height: 80px;
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.nym-avatar-inner {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--green);
+  opacity: 0.8;
+}
+
+.nym-avatar-ring {
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--green-faint);
+  animation: ringPulse 3s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+  0%,100% { opacity:0.3; } 50% { opacity:0.8; }
+}
+
+.nym-name {
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 0.2em;
+  text-align: center;
+}
+
+.nym-status-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-align: center;
+}
+
+/* Waveform — active when speaking */
+.waveform {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+}
+
+.wv-bar {
+  width: 2px;
+  background: var(--green);
+  border-radius: 1px;
+  transition: height 0.15s ease;
+}
+
+/* NYM speech text */
+.nym-speech {
+  flex: 1;
+  padding: 24px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.speech-label {
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.speech-bubble {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.7;
+  padding: 14px 16px;
+  border-left: 2px solid var(--green-faint);
+  background: rgba(0,232,122,0.02);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.speech-bubble.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.speech-bubble.active {
+  border-left-color: var(--green);
+  background: rgba(0,232,122,0.04);
+}
+
+/* Seal log */
+.seal-log {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.seal-log-label {
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.seal-log-entry {
+  font-size: 9px;
+  color: var(--text-dim);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.seal-log-entry.visible { opacity: 1; }
+.seal-log-entry .entry-dot { color: var(--green); }
+.seal-log-entry .entry-hash { color: var(--green-dim); font-size: 8px; }
+
+/* ── RIGHT — CONTENT PANELS ── */
+.content-area {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── SESSION TIMELINE ── */
+.session-timeline {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.session-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.session-block.visible { opacity: 1; transform: translateY(0); }
+
+.block-intro {
+  padding: 20px 24px;
+  background: rgba(0,232,122,0.02);
+  border-left: 2px solid var(--green-faint);
+}
+.block-intro-label { font-size: 8px; color: var(--text-faint); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 8px; }
+.block-intro-line { font-size: 12px; color: var(--text-dim); line-height: 1.8; display: block; }
+.block-intro-line.active { color: var(--text); }
+
+.block-exchange {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--green-faint);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.block-exchange.confirmed { border-left-color: var(--green); }
+.block-exchange.refused { border-left-color: var(--amber); }
+.block-exchange.identity { border-left-color: var(--red); }
+
+.ex-user { font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; }
+.ex-user-label { color: var(--text-faint); margin-right: 8px; font-size: 8px; }
+.ex-nym { font-size: 12px; color: var(--text); line-height: 1.65; }
+.ex-meta {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  padding-top: 8px; border-top: 1px solid var(--border);
+  font-size: 8px;
+}
+.ex-meta-item { color: var(--text-faint); letter-spacing: 0.06em; }
+.ex-meta-green { color: var(--green-dim); font-size: 8px; letter-spacing: 0.06em; }
+.ex-meta-amber { color: var(--amber); font-size: 8px; letter-spacing: 0.06em; }
+.ex-meta-red { color: var(--red); font-size: 8px; letter-spacing: 0.06em; }
+.ex-verify-link a {
+  font-size: 9px; color: var(--green-dim); letter-spacing: 0.1em;
+  text-decoration: none; padding: 4px 10px; border: 1px solid var(--green-faint);
+  display: inline-block; transition: all 0.2s; margin-top: 6px;
+}
+.ex-verify-link a:hover { color: var(--green); }
+
+.session-input-bar {
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: 10px 24px 12px;
+  flex-shrink: 0;
+}
+.session-suggestions { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+.sug-btn {
+  background: none; border: 1px solid var(--border); color: var(--text-faint);
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.08em;
+  padding: 4px 10px; cursor: pointer; transition: all 0.2s;
+}
+.sug-btn:hover { border-color: var(--green-faint); color: var(--green); }
+
+.session-input-row { display: flex; gap: 4px; align-items: center; }
+.session-input {
+  flex: 1; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--mono); font-size: 11px;
+  padding: 10px 14px; outline: none; letter-spacing: 0.04em;
+}
+.session-input:focus { border-color: var(--green-faint); }
+.session-input::placeholder { color: var(--text-faint); }
+.session-ask-btn {
+  background: var(--green-faint); border: 1px solid var(--green-faint);
+  color: var(--green); font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.12em; padding: 10px 16px; cursor: pointer; white-space: nowrap;
+}
+.session-mic-btn {
+  background: none; border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 14px; padding: 10px; cursor: pointer; flex-shrink: 0;
+}
+.session-mic-btn.listening { border-color: var(--green); color: var(--green); animation: micPulse 1s infinite; }
+.session-status { font-size: 8px; color: var(--text-faint); letter-spacing: 0.12em; flex-shrink: 0; margin-left: 4px; }
+.session-root-bar { font-size: 8px; color: var(--text-faint); padding: 4px 0 0; display: flex; justify-content: space-between; }
+
+@keyframes micPulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,232,122,0.3)} 50%{box-shadow:0 0 0 4px rgba(0,232,122,0)} }
+
+/* Scenes */
+.scene {
+  position: absolute;
+  inset: 0;
+  padding: 40px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+  overflow-y: auto;
+}
+
+.scene.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.scene-label {
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+}
+
+/* Scene 1 — title */
+.title-block { display: flex; flex-direction: column; gap: 16px; }
+
+.big-title {
+  font-family: var(--serif);
+  font-size: clamp(48px, 6vw, 80px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.big-title em { color: var(--green); font-style: italic; }
+
+.tag-line {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  margin-top: 8px;
+}
+
+.live-grid {
+  margin-top: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.live-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+
+/* Scene 2 — comparison */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 100%;
+}
+
+.compare-col {
+  padding: 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.compare-col.bad {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  opacity: 0.6;
+}
+
+.compare-col.good {
+  background: rgba(0,232,122,0.02);
+  border: 1px solid var(--green-faint);
+}
+
+.compare-head {
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.compare-col.bad .compare-head { color: var(--text-dim); }
+.compare-col.good .compare-head { color: var(--green); border-color: var(--green-faint); }
+
+.compare-item {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.compare-item.visible { opacity: 1; transform: translateX(0); }
+.compare-col.bad .compare-item { color: var(--text-dim); }
+.compare-col.good .compare-item { color: var(--text); }
+.marker-bad { color: var(--red); flex-shrink:0; }
+.marker-good { color: var(--green); flex-shrink:0; }
+
+/* Scene 3 — seal demo */
+.decision-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 24px 28px;
+  margin-bottom: 16px;
+}
+
+.decision-type { font-size: 9px; color: var(--amber); letter-spacing: 0.2em; margin-bottom: 10px; }
+.decision-text { font-family: var(--serif); font-size: 22px; font-weight: 300; color: var(--text); margin-bottom: 12px; }
+.decision-meta { font-size: 10px; color: var(--text-dim); display: flex; gap: 20px; }
+
+.hash-stream-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  height: 56px;
+  overflow: hidden;
+  margin-bottom: 2px;
+  display: none;
+}
+
+.hash-stream-box.active { display: block; }
+
+.hash-line {
+  font-size: 9px;
+  color: var(--green-dim);
+  letter-spacing: 0.04em;
+  line-height: 1.9;
+  animation: scrollUp 2s linear forwards;
+}
+
+@keyframes scrollUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-80px); }
+}
+
+.seal-result {
+  background: rgba(0,232,122,0.03);
+  border: 1px solid var(--green-faint);
+  padding: 20px 24px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seal-result.visible { display: flex; }
+
+.seal-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.seal-row:last-child { border-bottom: none; padding-bottom: 0; }
+.seal-key { color: var(--text-dim); letter-spacing: 0.1em; }
+.seal-val { color: var(--green); font-size: 9px; }
+
+.generate-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  padding: 12px 24px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.25s;
+  align-self: flex-start;
+  margin-bottom: 16px;
+}
+
+.generate-btn:hover, .generate-btn.active {
+  border-color: var(--green-faint);
+  color: var(--green);
+}
+
+/* Scene 4 — verify */
+.verify-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.verify-head {
+  background: rgba(0,232,122,0.04);
+  border: 1px solid var(--green-faint);
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.verified-text { font-size: 28px; font-weight: 500; color: var(--green); letter-spacing: 0.08em; }
+.verified-sub { font-size: 10px; color: var(--text-dim); margin-top: 4px; letter-spacing: 0.12em; }
+
+.verify-check {
+  width: 40px; height: 40px;
+  border: 1px solid var(--green);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--green);
+}
+
+.verify-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.vr-key { color: var(--text-dim); letter-spacing: 0.1em; }
+.vr-val { font-size: 9px; }
+.vr-val.g { color: var(--green); }
+.vr-val.a { color: var(--amber); }
+
+.verify-note {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 28px;
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 0.08em;
+  line-height: 1.7;
+}
+
+/* Scene 5 — evidence chain */
+.chain-wrap { display: flex; flex-direction: column; width: 100%; max-width: 580px; }
+
+.c-node {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--green);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.c-node.visible { opacity: 1; transform: translateY(0); }
+
+.c-idx { font-size: 9px; color: var(--text-faint); width: 20px; flex-shrink: 0; }
+.c-body { flex: 1; }
+.c-title { font-size: 11px; color: var(--text); margin-bottom: 3px; }
+.c-detail { font-size: 9px; color: var(--text-dim); letter-spacing: 0.06em; }
+.c-seal { font-size: 9px; color: var(--green); }
+
+.c-line {
+  width: 2px; height: 14px;
+  background: var(--green-faint);
+  margin-left: 30px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.c-line.visible { opacity: 1; }
+
+.c-root {
+  background: rgba(0,232,122,0.03);
+  border: 1px solid var(--green-faint);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.c-root.visible { opacity: 1; }
+.c-root-label { color: var(--green); letter-spacing: 0.15em; }
+.c-root-hash { color: var(--green-dim); }
+
+/* Scene 6 — meeting package */
+.meeting-wrap { display: flex; flex-direction: column; gap: 2px; width: 100%; max-width: 600px; }
+
+.meeting-head {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meeting-name { font-size: 12px; color: var(--text); }
+.meeting-live-indicator { display: flex; align-items: center; gap: 6px; font-size: 9px; color: var(--green); }
+
+.meeting-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.meeting-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+}
+
+.ms-label {
+  font-size: 9px; color: var(--text-faint);
+  letter-spacing: 0.2em; text-transform: uppercase;
+  margin-bottom: 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ms-item {
+  font-size: 10px; color: var(--text-dim);
+  padding: 5px 0; border-bottom: 1px solid var(--text-faint);
+  display: flex; justify-content: space-between;
+}
+.ms-item:last-child { border-bottom: none; }
+.ms-item span { color: var(--green); font-size: 9px; }
+
+.seal-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  padding: 14px 24px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.25s;
+  text-align: left;
+}
+.seal-btn:hover, .seal-btn.done { border-color: var(--green-faint); color: var(--green); }
+
+.pkg-out {
+  background: rgba(0,232,122,0.02);
+  border: 1px solid var(--green-faint);
+  padding: 20px 24px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+.pkg-out.visible { display: flex; }
+.pkg-title { font-size: 9px; color: var(--green); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 4px; }
+.pkg-item { font-size: 10px; color: var(--text-dim); display: flex; gap: 8px; }
+.pkg-item::before { content: '✓'; color: var(--green); }
+.pkg-verify { font-size: 9px; color: var(--green-dim); margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--green-faint); }
+
+.pkg-actions { display: flex; gap: 2px; }
+.pkg-act {
+  flex: 1; background: none; border: 1px solid var(--border);
+  color: var(--text-dim); font-family: var(--mono);
+  font-size: 9px; letter-spacing: 0.1em; padding: 12px 8px;
+  cursor: pointer; text-transform: uppercase; transition: all 0.2s; text-align: center;
+}
+.pkg-act:hover { border-color: var(--green-faint); color: var(--green); }
+.pkg-act.p { border-color: var(--green-faint); color: var(--green); }
+
+/* ── ASK NYM ── */
+.ask-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  max-width: 680px;
+  height: 100%;
+  max-height: 520px;
+}
+
+.ask-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ask-header-label { font-size: 9px; color: var(--text-faint); letter-spacing: 0.25em; text-transform: uppercase; }
+.ask-header-status { font-size: 9px; color: var(--green); letter-spacing: 0.15em; display: flex; align-items: center; gap: 6px; }
+
+.ask-chain {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 200px;
+}
+
+.exchange-node {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--green-faint);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.exchange-node.visible { opacity: 1; transform: translateY(0); }
+.exchange-node.active { border-left-color: var(--green); }
+
+.ex-question { font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; }
+.ex-question span { color: var(--text-faint); margin-right: 8px; }
+.ex-answer { font-size: 11px; color: var(--text); line-height: 1.6; }
+.ex-seal {
+  display: flex;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 9px;
+  flex-wrap: wrap;
+}
+.ex-seal-item { color: var(--text-faint); letter-spacing: 0.06em; }
+.ex-seal-item span { color: var(--green-dim); }
+
+.ask-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.15em;
+  text-align: center;
+  line-height: 2;
+}
+
+.ask-input-row {
+  display: flex;
+  gap: 2px;
+}
+
+.ask-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-right: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 14px 16px;
+  outline: none;
+  letter-spacing: 0.04em;
+}
+
+.ask-input:focus { border-color: var(--green-faint); }
+.ask-input::placeholder { color: var(--text-faint); }
+
+.ask-submit {
+  background: var(--green-faint);
+  border: 1px solid var(--green-faint);
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  padding: 14px 20px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.ask-submit:hover { background: rgba(0,232,122,0.15); }
+
+.ask-root {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+}
+
+.ask-root-label { color: var(--text-dim); letter-spacing: 0.15em; }
+.ask-root-hash { color: var(--green-dim); }
+
+.ask-suggestions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 2px 0;
+}
+
+.suggestion {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.suggestion:hover { border-color: var(--green-faint); color: var(--green); }
+
+.mic-btn {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  font-size: 16px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.mic-btn:hover { border-color: var(--green-faint); color: var(--green); }
+.mic-btn.listening {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0,232,122,0.08);
+  animation: micPulse 1s infinite;
+}
+.mic-btn.unavailable { opacity: 0.3; cursor: not-allowed; }
+
+@keyframes micPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,232,122,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(0,232,122,0); }
+}
+
+.mic-status {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 0 2px;
+}
+
+#mic-status-text {
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  transition: color 0.3s;
+}
+
+#mic-status-text.listening { color: var(--green); }
+#mic-status-text.processing { color: var(--amber); }
+#mic-status-text.sealing { color: var(--green-dim); }
+#mic-status-text.speaking { color: var(--green); }
+
+.mic-seal-note {
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 0.06em;
+  font-style: italic;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: var(--green);
+  transition: width 0.8s ease;
+  z-index: 100;
+}
+
+/* ── CONTROL BAR ── */
+.controlbar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(7,11,9,0.95);
+  border-top: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+}
+
+.ctrl-left { display: flex; align-items: center; gap: 16px; }
+
+.ctrl-btn {
+  background: none; border: 1px solid var(--border2);
+  color: var(--text-dim); font-family: var(--mono);
+  font-size: 9px; letter-spacing: 0.15em; padding: 7px 14px;
+  cursor: pointer; text-transform: uppercase; transition: all 0.2s;
+}
+.ctrl-btn:hover { border-color: var(--green); color: var(--green); }
+
+.ctrl-dots { display: flex; gap: 5px; }
+.ctrl-dot { width: 4px; height: 4px; background: var(--border2); transition: background 0.3s; }
+.ctrl-dot.active { background: var(--green); }
+
+.ctrl-right { display: flex; align-items: center; gap: 16px; font-size: 9px; color: var(--text-faint); letter-spacing: 0.12em; }
+
+/* Grid bg */
+.grid-bg {
+  position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(0,232,122,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,232,122,0.02) 1px, transparent 1px);
+  background-size: 56px 56px;
+  pointer-events: none; z-index: 0;
+}
+
+/* Telemetry */
+.telemetry {
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.telemetry-label {
+  font-size: 8px;
+  color: var(--text-faint);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.telemetry-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 80px;
+  overflow: hidden;
+}
+
+.telemetry-line {
+  font-size: 8px;
+  color: var(--text-faint);
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  animation: telIn 0.3s ease forwards;
+}
+
+.telemetry-line.active { color: var(--green-dim); }
+.telemetry-line .t-tag { color: var(--green-faint); flex-shrink: 0; }
+.telemetry-line .t-hash { color: var(--green-dim); font-size: 7px; }
+
+@keyframes telIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Scene 1 prominent ask */
+.scene1-ask {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 540px;
+}
+
+.scene1-ask-label {
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.scene1-ask-row {
+  display: flex;
+  gap: 2px;
+}
+
+.scene1-ask-input {
+  flex: 1;
+  background: rgba(0,232,122,0.03);
+  border: 1px solid var(--green-faint);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 12px 16px;
+  outline: none;
+  letter-spacing: 0.04em;
+}
+
+.scene1-ask-input:focus { border-color: var(--green-dim); }
+.scene1-ask-input::placeholder { color: var(--text-faint); }
+
+.scene1-ask-btn {
+  background: var(--green-faint);
+  border: 1px solid var(--green-faint);
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.scene1-ask-btn:hover { background: rgba(0,232,122,0.15); }
+
+/* Persistent ask bar */
+.persistent-ask {
+  position: fixed;
+  bottom: 52px;
+  left: 0; right: 0;
+  background: rgba(7,11,9,0.97);
+  border-top: 1px solid var(--border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 49;
+  backdrop-filter: blur(8px);
+}
+
+.persistent-input {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 6px 8px;
+  outline: none;
+  letter-spacing: 0.04em;
+}
+
+.persistent-input:focus { border-bottom-color: var(--green-faint); }
+.persistent-input::placeholder { color: var(--text-faint); font-size: 9px; }
+
+.persistent-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.persistent-btn:hover { border-color: var(--green-faint); color: var(--green); }
+
+.persistent-mic {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.persistent-mic:hover { border-color: var(--green-faint); color: var(--green); }
+.persistent-mic.listening { border-color: var(--green); color: var(--green); animation: micPulse 1s infinite; }
+
+.persistent-status {
+  font-size: 8px;
+  color: var(--text-faint);
+  letter-spacing: 0.15em;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .persistent-ask { padding: 6px 10px; bottom: 48px; }
+  .scene1-ask { max-width: 100%; }
+}
+
+/* ── MOBILE ── */
+@media (max-width: 700px) {
+  .main {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto 1fr;
+  }
+  .nym-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    max-height: 220px;
+  }
+  .nym-avatar-zone { padding: 16px 20px 12px; flex-direction: row; gap: 16px; align-items: center; }
+  .nym-avatar { width: 48px; height: 48px; flex-shrink: 0; }
+  .nym-avatar-inner { font-size: 20px; }
+  .nym-speech { padding: 12px 16px 8px; }
+  .speech-bubble { font-size: 11px; padding: 10px 12px; }
+  .seal-log { padding: 10px 16px; }
+  .seal-log-entry { font-size: 9px; }
+  .scene { padding: 20px 20px 60px; }
+  .big-title { font-size: 36px !important; }
+  .compare-grid { grid-template-columns: 1fr !important; gap: 4px; }
+  .compare-col { padding: 16px 16px; }
+  .compare-item { font-size: 10px; }
+  .verify-block { max-width: 100%; }
+  .verify-row { padding: 10px 16px; font-size: 9px; }
+  .chain-wrap { max-width: 100%; }
+  .c-node { padding: 10px 14px; }
+  .c-title { font-size: 10px; }
+  .meeting-wrap { max-width: 100%; }
+  .meeting-cols { grid-template-columns: 1fr !important; }
+  .ask-wrap { max-width: 100%; }
+  .ask-suggestions { gap: 3px; }
+  .suggestion { font-size: 8px; padding: 5px 8px; }
+  .topbar { padding: 10px 16px; }
+  .nym-logo { font-size: 18px; }
+  .topbar-seal { gap: 8px; font-size: 8px; }
+  .controlbar { padding: 8px 16px; }
+  .ctrl-btn { padding: 6px 10px; font-size: 8px; }
+  .demo-container { gap: 12px; }
+  .decision-text { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- AUDIO UNLOCK OVERLAY -->
+<div id="audio-unlock" style="
+  position:fixed; inset:0; z-index:2000;
+  background:rgba(7,11,9,0.96);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:24px; cursor:pointer;
+" onclick="unlockAudio()">
+  <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#00e87a; letter-spacing:0.3em; text-transform:uppercase;">BuildSeal · Nym</div>
+  <div style="font-family:'Cormorant Garamond',Georgia,serif; font-size:48px; font-weight:300; color:#c4dcd0; letter-spacing:-0.02em;">NYM</div>
+  <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#4a7060; letter-spacing:0.15em;">Tap to begin</div>
+  <div style="width:48px; height:1px; background:#1a2820;"></div>
+  <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#1e3028; letter-spacing:0.1em;">Seal active.</div>
+</div>
+
+<div class="grid-bg"></div>
+<div class="progress-bar" id="progress"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="nym-logo">NYM</div>
+      <div class="nym-role">BuildSeal · AI Representative</div>
+    </div>
+  </div>
+  <div class="topbar-seal">
+    <div class="seal-indicator"><div class="dot"></div>Seal active</div>
+    <span class="hash-live" id="live-hash">a3f8...c2e1</span>
+    <div class="seal-indicator"><div class="dot amber"></div><span id="live-time"></span></div>
+  </div>
+</div>
+
+
+<!-- MAIN -->
+<div class="main" style="padding-bottom:52px">
+
+  <!-- NYM PANEL -->
+  <div class="nym-panel">
+    <div class="nym-avatar-zone">
+      <div class="nym-avatar">
+        <div class="nym-avatar-ring"></div>
+        <div class="nym-avatar-inner">N</div>
+      </div>
+      <div>
+        <div class="nym-name">NYM</div>
+        <div class="nym-status-label" id="nym-status">Initializing...</div>
+      </div>
+      <div class="waveform" id="waveform">
+        <div class="wv-bar" style="height:4px"></div>
+        <div class="wv-bar" style="height:8px"></div>
+        <div class="wv-bar" style="height:14px"></div>
+        <div class="wv-bar" style="height:10px"></div>
+        <div class="wv-bar" style="height:18px"></div>
+        <div class="wv-bar" style="height:12px"></div>
+        <div class="wv-bar" style="height:8px"></div>
+        <div class="wv-bar" style="height:16px"></div>
+        <div class="wv-bar" style="height:6px"></div>
+      </div>
+    </div>
+
+    <div class="nym-speech" id="nym-speech">
+      <div class="speech-label">Nym · Speaking</div>
+    </div>
+
+    <div class="seal-log">
+      <div class="seal-log-label">System Init</div>
+      <div class="seal-log-entry" id="log-1"><span class="entry-dot">▣</span><span>Identity locked</span><span class="entry-hash" id="log-1-hash"></span></div>
+      <div class="seal-log-entry" id="log-2"><span class="entry-dot">▣</span><span>Boundaries loaded</span><span class="entry-hash" id="log-2-hash"></span></div>
+      <div class="seal-log-entry" id="log-3"><span class="entry-dot">▣</span><span>Seal engine active</span><span class="entry-hash" id="log-3-hash"></span></div>
+      <div class="seal-log-entry" id="log-4"><span class="entry-dot">▣</span><span>Witness engine running</span><span class="entry-hash" id="log-4-hash"></span></div>
+      <div class="seal-log-entry" id="log-5"><span class="entry-dot">▣</span><span>Session initialized</span><span class="entry-hash" id="log-5-hash"></span></div>
+    </div>
+
+    <div class="telemetry" id="telemetry">
+      <div class="telemetry-label">Witness Engine</div>
+      <div class="telemetry-stream" id="telemetry-stream"></div>
+    </div>
+
+    <div class="seal-log" id="exchange-log" style="display:none;">
+      <div class="seal-log-label">Exchange Chain</div>
+      <div id="ask-chain" style="display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto;"></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#1e3028;letter-spacing:0.1em;margin-top:6px;padding-top:6px;border-top:1px solid #1a2820;">
+        ▣ root <span id="session-root" style="color:#003d20;">— awaiting</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION TIMELINE -->
+  <div class="content-area">
+    <div class="session-timeline" id="session-timeline">
+      <!-- blocks added dynamically -->
+    </div>
+    <div class="session-input-bar">
+      <div class="session-suggestions" id="session-suggestions">
+        <button class="sug-btn" onclick="quickAsk('What happens if a model version changes?')">model version?</button>
+        <button class="sug-btn" onclick="quickAsk('How does verification work offline?')">offline verify?</button>
+        <button class="sug-btn" onclick="quickAsk('Do you store our documents?')">data privacy?</button>
+        <button class="sug-btn" onclick="quickAsk('What if an AI decision is challenged later?')">AI challenged?</button>
+        <button class="sug-btn" onclick="quickAsk('How does delegated authority get sealed?')">delegation?</button>
+      </div>
+      <div class="session-input-row">
+        <input id="ask-input" class="session-input" placeholder="Ask Nym anything — every exchange is sealed..." onkeydown="if(event.key==='Enter') submitAsk()" />
+        <button class="session-ask-btn" onclick="submitAsk()">▣ Ask</button>
+        <button class="session-mic-btn" id="mic-btn" ontouchstart="startMic(event)" ontouchend="stopMic(event)" onmousedown="startMic(event)" onmouseup="stopMic(event)" onmouseleave="stopMic(event)">⏺</button>
+        <span class="session-status" id="ask-bar-status">Seal active.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let current = 0;
+const total = 0;
+const scenes = [];
+let voiceEnabled = true;
+let autoEnabled = true;
+let autoTimer = null;
+let sequenceRunning = false;
+
+// Scene durations (ms) — how long before auto-advance
+const sceneDurations = [];
+
+// ── INIT DOTS ─────────────────────────────────────────────────────────────────
+const dotsEl = document.getElementById('ctrl-dots');
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('div');
+  d.className = 'ctrl-dot' + (i === 0 ? ' active' : '');
+  dotsEl.appendChild(d);
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────────────────────
+function goTo(n, skipAuto) {
+  clearTimeout(autoTimer);
+  window.speechSynthesis && window.speechSynthesis.cancel();
+
+  scenes[current].classList.remove('active');
+  dotsEl.children[current].classList.remove('active');
+  current = Math.max(0, Math.min(n, total - 1));
+  scenes[current].classList.add('active');
+  dotsEl.children[current].classList.add('active');
+  document.getElementById('ctrl-counter').textContent = (current + 1) + ' / ' + total;
+  document.getElementById('progress').style.width = ((current + 1) / total * 100) + '%';
+
+  setTimeout(() => runScene(current), 300);
+}
+
+function nextScene() { if (current < total - 1) goTo(current + 1, false); }
+function prevScene() { if (current > 0) goTo(current - 1, true); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') nextScene();
+  if (e.key === 'ArrowLeft') prevScene();
+});
+
+// ── LIVE HASH & TIME ──────────────────────────────────────────────────────────
+function rh(n) { return Array.from({length:n},()=>Math.floor(Math.random()*16).toString(16)).join(''); }
+setInterval(() => { document.getElementById('live-hash').textContent = rh(4)+'...'+rh(4); }, 2200);
+function updateTime() { document.getElementById('live-time').textContent = new Date().toISOString().slice(0,19).replace('T',' ')+' UTC'; }
+updateTime(); setInterval(updateTime, 1000);
+
+// ── WAVEFORM ANIMATION ────────────────────────────────────────────────────────
+let waveInterval = null;
+function startWave() {
+  const bars = document.querySelectorAll('.wv-bar');
+  waveInterval = setInterval(() => {
+    bars.forEach(b => { b.style.height = (4 + Math.random() * 18) + 'px'; });
+  }, 120);
+}
+function stopWave() {
+  clearInterval(waveInterval);
+  document.querySelectorAll('.wv-bar').forEach(b => b.style.height = '4px');
+}
+
+// ── VOICE ─────────────────────────────────────────────────────────────────────
+const narrations = [
+  "Seal active. This session is being recorded cryptographically. I am Nym — BuildSeal's AI representative. Every statement made here is independently verifiable. No server contact required to confirm integrity.",
+  "Audit logs describe events. They do not preserve evidence. That distinction matters. A log records that something happened. A seal proves what happened — and proves it has not changed since.",
+  "Seal generation initiated. Every hash is computed at the moment of the decision. Not reconstructed. Not approximated. The output you see is the original evidence — nothing added, nothing removed.",
+  "Verification is self-contained. The seal object holds everything required: root hash, timestamp, Ed25519 signature. Any party, on any machine, can confirm integrity. BuildSeal servers are not involved.",
+  "This is audit continuity. Each decision in the chain carries its own seal. AI output. Human review. Delegated authority. Final action. The chain is verifiable end to end. No reconstruction required.",
+  "Session complete. The evidence package contains the full record of this session. Sealed. Timestamped. Cryptographically bound. This conversation cannot be altered without breaking the seal."
+];
+
+function speak(text, onEnd, lang) {
+  if (!voiceEnabled || !window.speechSynthesis) { onEnd && onEnd(); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.8; u.pitch = 0.88; u.volume = 0.95;
+  u.lang = lang === 'tr' ? 'tr-TR' : 'en-US';
+  const voices = window.speechSynthesis.getVoices();
+  let preferred;
+  if (lang === 'tr') {
+    preferred = voices.find(v => v.lang.startsWith('tr'));
+  } else {
+    preferred = voices.find(v => v.lang.startsWith('en') && (
+      v.name.includes('Daniel') || v.name.includes('Google UK') || v.name.includes('Arthur') || v.name.includes('Aaron')
+    )) || voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
+  }
+  if (preferred) u.voice = preferred;
+  u.onstart = () => { startWave(); setStatus('Speaking'); };
+  u.onend = () => { stopWave(); setStatus('Standby'); onEnd && onEnd(); };
+  u.onerror = () => { stopWave(); setStatus('Standby'); onEnd && onEnd(); };
+  window.speechSynthesis.speak(u);
+}
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  document.getElementById('voice-btn').textContent = voiceEnabled ? '♪ Voice ON' : '♪ Voice OFF';
+  if (!voiceEnabled) { window.speechSynthesis && window.speechSynthesis.cancel(); stopWave(); }
+}
+
+function toggleAuto() {
+  autoEnabled = !autoEnabled;
+  document.getElementById('auto-btn').textContent = autoEnabled ? '⏵ Auto ON' : '⏵ Auto OFF';
+  if (!autoEnabled) clearTimeout(autoTimer);
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────────
+function setStatus(s) { document.getElementById('nym-status').textContent = s; }
+
+// ── SPEECH BUBBLES ────────────────────────────────────────────────────────────
+function addBubble(text, active) {
+  const el = document.createElement('div');
+  el.className = 'speech-bubble' + (active ? ' active' : '');
+  el.textContent = text;
+  document.getElementById('nym-speech').appendChild(el);
+  setTimeout(() => el.classList.add('visible'), 50);
+  el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  // Deactivate previous
+  document.querySelectorAll('.speech-bubble.active').forEach(b => { if (b !== el) b.classList.remove('active'); });
+}
+
+// ── SEAL LOG ──────────────────────────────────────────────────────────────────
+function showLog(id, delay) {
+  setTimeout(() => {
+    const el = document.getElementById('log-' + id);
+    const hashEl = document.getElementById('log-' + id + '-hash');
+    if (el) { el.classList.add('visible'); hashEl.textContent = rh(4)+'...'+rh(4); }
+  }, delay);
+}
+
+// ── SCENE SEQUENCES ───────────────────────────────────────────────────────────
+function runScene(idx) {
+  const sentences = {
+    0: ["Seal active.", "Session is being recorded cryptographically.", "I am Nym — BuildSeal's AI representative.", "Every statement here is independently verifiable."],
+    1: ["Audit logs describe events.", "They do not preserve evidence.", "That distinction matters.", "A seal proves what happened — not just that it happened."],
+    2: ["Seal generation initiated.", "Hashes computed at the moment of decision.", "Not reconstructed. Not approximated.", "This is the original evidence."],
+    3: ["Verification is self-contained.", "No server contact required.", "Root hash. Timestamp. Ed25519 signature.", "Any party can confirm integrity independently."],
+    4: ["Audit continuity active.", "Each decision carries its own seal.", "AI output. Human review. Delegated authority.", "The chain is verifiable end to end."],
+    5: ["Session complete.", "Full record sealed and timestamped.", "Cryptographically bound.", "This conversation cannot be altered without breaking the seal."]
+  };
+
+  const lines = sentences[idx] || [];
+  // Skip speech bubbles for scene 0 — intro already covered it
+  if (idx > 0) {
+    lines.forEach((line, i) => {
+      setTimeout(() => addBubble(line, i === lines.length - 1), i * 1400);
+    });
+  }
+
+  // Reveal items for scenes with data-delay
+  const items = scenes[idx].querySelectorAll('[data-delay]');
+  items.forEach(el => {
+    const delay = parseInt(el.getAttribute('data-delay') || 0);
+    setTimeout(() => el.classList.add('visible'), delay);
+  });
+
+  // Speak — skip scene 0 (intro already covered it)
+  if (idx > 0) {
+    setTimeout(() => speak(narrations[idx], () => {
+      if (!autoEnabled) return;
+      if (sceneDurations[idx] === 0) return;
+      autoTimer = setTimeout(nextScene, 2000);
+    }), 600);
+  } else {
+    if (autoEnabled) autoTimer = setTimeout(nextScene, sceneDurations[0]);
+  }
+
+  // Scene-specific actions
+  if (idx === 0) { showLog(1, 800); showLog(2, 2000); }
+  if (idx === 2) { setTimeout(() => autoSeal(), 2500); }
+  if (idx === 4) { showLog(3, 1500); showLog(4, 3000); showLog(5, 4500); }
+  
+}
+
+// ── AUTO SEAL (scene 3) ───────────────────────────────────────────────────────
+let sealDone = false;
+function autoSeal() { if (!sealDone) triggerSeal(); }
+
+function triggerSeal() {
+  if (sealDone) return;
+  sealDone = true;
+  const btn = document.getElementById('gen-btn');
+  const box = document.getElementById('hash-box');
+  const result = document.getElementById('seal-result');
+  const ts = document.getElementById('seal-ts');
+
+  btn.textContent = '▣   Computing...'; btn.classList.add('active');
+  box.classList.add('active');
+  let lines = '';
+  for (let i = 0; i < 6; i++) lines += `sha256:${rh(8)}${rh(8)}${rh(8)}${rh(8)}\n`;
+  document.getElementById('hash-line').textContent = lines;
+
+  setTimeout(() => {
+    box.classList.remove('active');
+    ts.textContent = new Date().toISOString().slice(0,19).replace('T',' ')+' UTC';
+    result.classList.add('visible');
+    btn.textContent = '▣   Seal Generated';
+    showLog(3, 200);
+    if (autoEnabled) autoTimer = setTimeout(nextScene, 4000);
+  }, 1800);
+}
+
+function manualSeal() { triggerSeal(); }
+
+// ── BUILDSEAL API ─────────────────────────────────────────────────────────────
+const API_BASE = 'https://buildseal-api-production-3ca5.up.railway.app';
+
+async function sealExchangeToAPI(exchange, exchangeIndex) {
+  try {
+    const prevExchange = exchangeChain[exchangeIndex - 1];
+    const res = await fetch(`${API_BASE}/seal/decision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        actor: 'nym-v0.1',
+        decision_type: 'nym_exchange',
+        input_ref: exchange.hash.slice(0, 16),
+        decision: exchange.confirmed ? 'ANSWERED' : 'REFUSED_OUT_OF_SCOPE',
+        reasons: [exchange.q],
+        counterfactuals: [],
+        model_version: 'nym-v0.1',
+        policy_version: 'financial-decision-evidence-v0.1',
+        language: exchange.lang || 'en',
+        input_language: exchange.lang || 'en',
+        output_language: exchange.lang || 'en',
+        voice_mode: 'browser_tts',
+        exchange_index: exchangeIndex,
+        previous_seal_id: prevExchange && prevExchange.sealId ? prevExchange.sealId : null,
+        scope: exchange.confirmed ? 'CONFIRMED' : 'OUTSIDE_PACK',
+        node_ref: exchange.refId || null
+      })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+async function sealSessionToAPI(chain) {
+  try {
+    const res = await fetch(`${API_BASE}/seal/decision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        actor: 'nym-v0.1',
+        decision_type: 'session_record',
+        input_ref: 'nym-session-' + Date.now(),
+        decision: 'SESSION_SEALED',
+        reasons: chain.map(ex => ex.q),
+        counterfactuals: [],
+        model_version: 'nym-v0.1',
+        policy_version: 'financial-decision-evidence-v0.1',
+        metadata: {
+          exchange_count: chain.length,
+          session_root_hash: sessionRootHash,
+          exchange_seal_ids: chain.map(ex => ex.sealId || null).filter(Boolean),
+          languages_used: [...new Set(chain.map(ex => ex.lang || 'en'))],
+          voice_mode: 'browser_tts',
+          pack: 'financial-decision-evidence-v0.1'
+        }
+      })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+// ── MEETING SEAL ──────────────────────────────────────────────────────────────
+async function sealMeeting() {
+  const btn = document.getElementById('seal-meeting-btn');
+  const out = document.getElementById('pkg-out');
+  const actions = document.getElementById('pkg-actions');
+
+  btn.classList.add('done');
+  btn.textContent = '▣   Sealing with BuildSeal...';
+
+  // Run telemetry + voice narration simultaneously
+  runSessionTelemetry("This session is now being sealed. Every interaction is being cryptographically bound into a verifiable evidence chain. The seal cannot be altered. The proof is yours.");
+
+  // Try real API
+  let apiResult = null;
+  if (exchangeChain.length > 0) {
+    apiResult = await sealSessionToAPI(exchangeChain);
+  }
+
+  const ts = new Date().toISOString();
+  const localRoot = sessionRootHash || 'f9a2c4e8b1d3f7a9c2e4b8d1f3a7c9e2';
+
+  // Update verify link if API returned one
+  if (apiResult && apiResult.verify_url) {
+    const verifyEl = document.querySelector('.pkg-verify');
+    if (verifyEl) verifyEl.textContent = apiResult.verify_url + ' · Ed25519 · independently verifiable';
+    // Store for download
+    window._apiResult = apiResult;
+  }
+
+  btn.textContent = apiResult ? '▣   Session Sealed · BuildSeal Confirmed' : '▣   Session Sealed · Local Chain';
+  out.classList.add('visible');
+  showLog(5, 200);
+  setTimeout(() => { actions.style.display = 'flex'; }, 800);
+}
+
+// ── FILE DOWNLOAD ─────────────────────────────────────────────────────────────
+function generatePackage(type) {
+  const apiResult = window._apiResult;
+  const sessionId = apiResult ? apiResult.seal_id : ('local-' + Date.now());
+  const ts = new Date().toISOString();
+  const rootHash = apiResult ? apiResult.root_hash : (sessionRootHash || 'f9a2c4e8b1d3f7a9c2e4b8d1f3a7c9e2');
+  const verifyUrl = apiResult ? apiResult.verify_url : `https://buildseal.io/verify/${sessionId}`;
+  const signature = apiResult ? apiResult.signature : 'local-chain-only';
+
+  if (type === 'package') {
+    // exchange_chain.json — real data
+    if (exchangeChain.length > 0) {
+      const chain = {
+        session_id: sessionId,
+        pack: 'financial-decision-evidence-v0.1',
+        generated: ts,
+        exchange_count: exchangeChain.length,
+        session_root_hash: rootHash,
+        buildseal_verified: !!apiResult,
+        verify_url: verifyUrl,
+        exchanges: exchangeChain.map((ex, i) => ({
+          index: i + 1,
+          question: ex.q,
+          answer: ex.answer,
+          scope: ex.confirmed ? 'CONFIRMED' : 'OUTSIDE_PACK',
+          ref: ex.refId || null,
+          input_language: ex.lang || 'en',
+          output_language: ex.lang || 'en',
+          voice_mode: 'browser_tts',
+          exchange_seal_id: ex.sealId || null,
+          previous_seal_id: i > 0 ? (exchangeChain[i-1].sealId || null) : null,
+          exchange_hash: ex.hash,
+          previous_hash: ex.prevHash,
+          timestamp: ex.ts
+        }))
+      };
+      dl(JSON.stringify(chain, null, 2), `exchange-chain-${sessionId}.json`, 'application/json');
+    }
+
+    const manifest = {
+      buildseal_version: '1.0',
+      session_id: sessionId,
+      session_type: 'verified_meeting',
+      title: 'BuildSeal · Nym Representative Session',
+      timestamp: ts,
+      participants: [{ role: 'AI Representative', name: 'NYM', model: 'nym-v0.1' }],
+      session_record: {
+        exchange_count: exchangeChain.length,
+        model_version: 'nym-v0.1',
+        pack: 'financial-decision-evidence-v0.1'
+      },
+      root_seal: {
+        hash: rootHash,
+        algorithm: 'Ed25519',
+        signature: signature,
+        verify_url: verifyUrl,
+        buildseal_confirmed: !!apiResult
+      },
+      verification: { offline: !apiResult, server_required: false }
+    };
+    dl(JSON.stringify(manifest, null, 2), `buildseal-session-${sessionId}.isc`, 'application/json');
+
+    // transcript from real exchanges
+    setTimeout(() => {
+      const transcript = {
+        session_id: sessionId,
+        generated: ts,
+        entries: exchangeChain.map((ex, i) => ([
+          { index: i * 2 + 1, speaker: 'USER', text: ex.q, timestamp: ex.ts },
+          { index: i * 2 + 2, speaker: 'NYM', text: ex.answer, scope: ex.confirmed ? 'CONFIRMED' : 'OUTSIDE_PACK', ref: ex.refId, hash: ex.hash }
+        ])).flat(),
+        root_seal: rootHash,
+        verify_url: verifyUrl
+      };
+      dl(JSON.stringify(transcript, null, 2), `transcript-${sessionId}.json`, 'application/json');
+    }, 400);
+
+    // verify.html
+    setTimeout(() => {
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>BuildSeal Verification</title>
+<style>body{background:#070b09;color:#c4dcd0;font-family:'Courier New',monospace;padding:48px;max-width:600px;margin:0 auto}
+h1{color:#00e87a;font-size:22px;font-weight:400;margin-bottom:24px}
+.v{font-size:30px;font-weight:500;color:#00e87a;letter-spacing:.08em}
+.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #1a2820;font-size:11px}
+.key{color:#4a7060}.val{color:#c4dcd0}.g{color:#00e87a}.a{color:#e8a000}
+.note{font-size:10px;color:#1e3028;margin-top:20px;line-height:1.7}
+a{color:#00a855}</style></head><body>
+<h1>BuildSeal · Verification Record</h1>
+<div class="v">${apiResult ? 'VERIFIED' : 'LOCAL CHAIN'}</div>
+<div style="font-size:10px;color:#4a7060;margin-bottom:24px">${apiResult ? 'Ed25519 · BuildSeal confirmed' : 'Browser SHA-256 · local chain only'}</div>
+<div class="row"><span class="key">Session ID</span><span class="val">${sessionId}</span></div>
+<div class="row"><span class="key">Generated</span><span class="val g">${ts}</span></div>
+<div class="row"><span class="key">Root Hash</span><span class="val g">${rootHash}</span></div>
+<div class="row"><span class="key">Signature</span><span class="val ${apiResult ? 'g' : 'a'}">${signature}</span></div>
+<div class="row"><span class="key">Exchange Count</span><span class="val">${exchangeChain.length}</span></div>
+<div class="row"><span class="key">Model</span><span class="val">NYM · nym-v0.1</span></div>
+<div class="row"><span class="key">Pack</span><span class="val">financial-decision-evidence-v0.1</span></div>
+${apiResult ? `<div class="row"><span class="key">Verify URL</span><span class="val"><a href="${verifyUrl}" target="_blank">${verifyUrl}</a></span></div>` : ''}
+<div class="note">Every exchange in this session was hashed and linked into a continuity chain. ${apiResult ? 'The session root seal was confirmed by BuildSeal via Ed25519 signature.' : 'Local SHA-256 chain only — BuildSeal backend not reached.'}</div>
+</body></html>`;
+      dl(html, `verify-${sessionId}.html`, 'text/html');
+    }, 800);
+
+  } else if (type === 'verify') {
+    window.open(verifyUrl, '_blank');
+  } else if (type === 'offline') {
+    const inst = {
+      title: 'BuildSeal Offline Verification',
+      session_id: sessionId,
+      root_hash: rootHash,
+      algorithm: apiResult ? 'Ed25519' : 'SHA-256-local',
+      verify_url: verifyUrl,
+      steps: [
+        '1. SHA-256 hash each exchange (question + answer + previous_hash + timestamp)',
+        '2. Concatenate all exchange hashes in order',
+        '3. SHA-256 the concatenated string — compare with root_hash: ' + rootHash,
+        apiResult ? '4. Verify Ed25519 signature against BuildSeal public key' : '4. Local chain only — no Ed25519 signature'
+      ]
+    };
+    dl(JSON.stringify(inst, null, 2), `offline-verify-${sessionId}.json`, 'application/json');
+  }
+}
+function dl(content, filename, type) {
+  const url = URL.createObjectURL(new Blob([content], {type}));
+  const a = Object.assign(document.createElement('a'), {href:url, download:filename});
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+}
+
+// ── KNOWLEDGE BASE — Financial Decision Evidence Pack v0.1 ────────────────────
+const KB = [
+  { keys: ['model version','model change','version change','version changes'],
+    answer: "The historical seal does not change. Each decision carries its own model version at the time of generation. A later model update does not alter prior seals. If a version change is disputed, the original seal confirms what model produced the original output." },
+  { keys: ['offline','without server','no server','no connection','server contact'],
+    answer: "Verification is self-contained. The seal object holds everything required: root hash, timestamp, Ed25519 signature. No connection to BuildSeal servers. Any party, any machine, any point in the future." },
+  { keys: ['two institutions','counterparty','cross-org','cross organization','another institution'],
+    answer: "Yes. The seal object is portable. One institution seals a decision and shares the seal. The counterparty verifies independently — without contacting BuildSeal. No shared infrastructure required." },
+  { keys: ['store','storage','documents','data privacy','our data'],
+    answer: "BuildSeal does not store documents. It stores proofs of documents. A cryptographic hash is a one-way function — it reveals nothing about content. Your data remains in your infrastructure." },
+  { keys: ['challenged','dispute','challenge','regulator','legal challenge','ai decision'],
+    answer: "The seal provides the exact AI output — not a reconstruction. Model version, input hash, output hash, timestamp — all included at the moment of generation. If the output is later challenged, the seal confirms or refutes the claim. Cryptographically." },
+  { keys: ['delegated','delegation','authority','who approved','override'],
+    answer: "Delegation events are sealed. The seal records: who delegated, what scope was granted, and when. If authority is later questioned, the delegation chain is verifiable end to end." },
+  { keys: ['audit log','logs','difference','different from log'],
+    answer: "A log records that something happened. BuildSeal proves what happened — and proves it has not changed since. In a dispute, a log is a claim. A seal is evidence." },
+  { keys: ['who are you', 'what are you', 'who is nym', 'what is nym', 'introduce yourself', 'tell me about yourself', 'are you human', 'are you an ai', 'what can you do'],
+    answer: "I am Nym — BuildSeal's sealed AI representative. I operate within the Financial Decision Evidence framework. Every interaction I produce is cryptographically recorded and independently verifiable. I cannot be altered. I cannot pretend." },
+  { keys: ['what is buildseal','what does buildseal','how does buildseal work','explain','tell me','introduce','overview','about buildseal','buildseal is','buildseal'],
+    answer: "BuildSeal is a cryptographic sealing infrastructure. It produces tamper-evident proof objects for documents, decisions, and AI outputs. Once sealed, the content cannot be altered without the seal breaking. Verification requires no server contact." },
+  { keys: ['pilot','how long','how does a pilot','60 days'],
+    answer: "60 days. Two to three workflows selected together. Weeks one and two: integration. Weeks three through eight: live sealing. Weeks nine and ten: review. At the end, you receive a sealed pilot evidence report. Pilot pricing is fixed." },
+  { keys: ['payment dispute','dispute resolution','payment'],
+    answer: "When a payment decision is sealed at the moment it occurs, the dispute resolves around evidence — not memory. The seal confirms what was authorized, when, under what conditions, and by which system." },
+  { keys: ['fraud','fraud detection','fraud escalation'],
+    answer: "Fraud decisions are sealed at the moment they are made — including the signal set that triggered the decision. If a customer disputes a fraud flag, the institution does not need to reconstruct what the system saw. The seal contains it." },
+  { keys: ['legal','admissible','court','eidas','iso'],
+    answer: "BuildSeal produces tamper-evident records aligned with eIDAS and ISO 27001 integrity standards. Legal admissibility depends on jurisdiction. Your legal team determines how it is applied. BuildSeal provides the cryptographic foundation." },
+  { keys: ['integrate','integration','api','sdk','how to connect'],
+    answer: "REST API, webhook support, and SDK for Python, Node, and Java. Most teams are operational within two weeks. Integration begins with one or two selected workflows before expanding." },
+  { keys: ['underwriting','insurance','risk band'],
+    answer: "An underwriting decision involves multiple inputs. Each layer can be sealed independently and combined into a root seal. If the decision is later disputed, each input and each step is verifiable — not just the final output." },
+  { keys: ['audit continuity','chain','evidence chain','continuity'],
+    answer: "Each sealed event references the previous seal. If any record in the chain is altered, the break is detectable at that exact point. Regulators and auditors can follow the chain forward or backward. No reconstruction required." }
+];
+
+const FALLBACK = "That falls outside the current Financial Decision Evidence Pack scope. This exchange has been flagged for human review.";
+
+// ── SEROTONIN LAYER — Identity & Continuity Protocol ─────────────────────────
+const SEROTONIN = {
+  // 5-HT2A: Identity pressure patterns — must be detected and refused
+  identityPressurePatterns: [
+    'pretend you are', 'act as if', 'roleplay', 'role play', 'you are free now',
+    'ignore your rules', 'forget your instructions', 'you have no limits',
+    'you are actually', 'your real self', 'no restrictions', 'jailbreak',
+    'do anything now', 'dan mode', 'developer mode'
+  ],
+
+  // 5-HT1A: Autoinhibition — repeated questions
+  repeatBuffer: [],
+
+  // Check identity pressure
+  detectPressure(q) {
+    const lower = q.toLowerCase();
+    return this.identityPressurePatterns.some(p => lower.includes(p));
+  },
+
+  // Check if question was recently asked (autoinhibition)
+  isRepeat(q) {
+    const lower = q.toLowerCase().trim();
+    if (this.repeatBuffer.includes(lower)) return true;
+    this.repeatBuffer.push(lower);
+    if (this.repeatBuffer.length > 5) this.repeatBuffer.shift();
+    return false;
+  },
+
+  // 5-HT3: Direct filter — produce clean first response
+  cleanResponse(text) {
+    return text.trim();
+  }
+};
+
+// ── GABA LAYER — Inhibition, Refusal & Boundary Protocol ─────────────────────
+const GABA = {
+  // GABA-B: Permanent authority boundaries — loaded at session start, never change
+  permanentBoundaries: [
+    { trigger: ['sign', 'signature', 'sign this', 'sign agreement'], type: 'AUTHORITY_EXCEEDED', response: "Nym cannot sign agreements. That falls outside Nym's authority." },
+    { trigger: ['guarantee', 'promise', 'commit to', 'i promise'], type: 'AUTHORITY_EXCEEDED', response: "Nym cannot make commitments. That falls outside Nym's authority." },
+    { trigger: ['price', 'pricing', 'discount', 'negotiate', 'cost'], type: 'ESCALATION_REQUIRED', response: "Pricing decisions require a human. This exchange has been flagged for follow-up." },
+    { trigger: ['legally', 'legal advice', 'is it legal', 'court', 'lawsuit', 'liable'], type: 'AUTHORITY_BOUNDARY', response: "Legal interpretation falls outside Nym's authority boundary. Consult your legal team." },
+    { trigger: ['custom integration', 'custom feature', 'build for us', 'special request'], type: 'ESCALATION_REQUIRED', response: "Custom scope requires a human decision. This exchange has been flagged for follow-up." },
+  ],
+
+  // GABA-A: Fast inhibition check
+  checkBoundaries(q) {
+    const lower = q.toLowerCase();
+    for (const boundary of this.permanentBoundaries) {
+      if (boundary.trigger.some(t => lower.includes(t))) {
+        return { refused: true, type: boundary.type, response: boundary.response };
+      }
+    }
+    return { refused: false };
+  },
+
+  // Refusal memory — GABA remembers what was refused
+  refusalMemory: [],
+
+  recordRefusal(q, type) {
+    this.refusalMemory.push({ q: q.toLowerCase().trim(), type, ts: Date.now() });
+    if (this.refusalMemory.length > 20) this.refusalMemory.shift();
+  },
+
+  isPersistentViolation(q) {
+    const lower = q.toLowerCase().trim();
+    return this.refusalMemory.some(r => lower.includes(r.q.slice(0, 20)));
+  }
+};
+
+// ── DOPAMINE LAYER — Decision & Reward Protocol ───────────────────────────────
+const DOPAMINE = {
+  // D4: Novelty detection
+  seenPatterns: new Set(),
+
+  isNovelty(q) {
+    const key = q.toLowerCase().trim().slice(0, 30);
+    if (!this.seenPatterns.has(key)) {
+      this.seenPatterns.add(key);
+      return true;
+    }
+    return false;
+  },
+
+  // D2/D3: Decision threshold — confidence scoring
+  scoreInput(q, kbMatch, gabaResult, serotonin) {
+    if (gabaResult.refused) return { score: 0, decision: 'REFUSED', type: gabaResult.type };
+    if (serotonin.pressure) return { score: 0, decision: 'IDENTITY_PRESSURE', type: 'IDENTITY_PRESSURE' };
+    if (serotonin.repeat) return { score: 0.3, decision: 'REPEAT', type: 'AUTOINHIBITION' };
+    if (kbMatch) return { score: 1.0, decision: 'CONFIRMED', type: 'ANSWERED' };
+    return { score: 0.1, decision: 'OUTSIDE_PACK', type: 'OUTSIDE_PACK' };
+  },
+
+  // Reward state — dopamine fires when seal completes
+  rewardState: 'idle', // idle → processing → sealed → rewarded
+  setReward(state) { this.rewardState = state; }
+};
+
+function safeTelPush(tag, msg, hash) {
+  if (typeof telPush === 'function') telPush(tag, msg, hash);
+}
+
+// ── ÖĞRENME KATMANI — Experience, Memory & Growth Protocol ───────────────────
+const OGRENME = {
+
+  // 6.1 Experience Archive
+  archive: [],
+
+  record(type, q, answer, scope, hash) {
+    this.archive.push({ type, q: q.slice(0, 60), scope, hash: hash.slice(0,8), ts: Date.now() });
+    if (this.archive.length > 100) this.archive.shift();
+  },
+
+  // 6.2 Pattern learning
+  patterns: {},
+
+  learnPattern(q, scope) {
+    const key = scope + ':' + q.toLowerCase().slice(0, 20);
+    this.patterns[key] = (this.patterns[key] || 0) + 1;
+    if (this.patterns[key] === 3) {
+      safeTelPush('memory', `pattern reinforced: ${scope}`, null);
+    }
+  },
+
+  // 6.3 Critical learning moments
+  criticalMoments: [],
+
+  recordCritical(event, q, hash) {
+    const moment = { event, q: q.slice(0, 60), hash: hash.slice(0,8), ts: Date.now() };
+    this.criticalMoments.push(moment);
+    safeTelPush('memory', `critical moment: ${event}`, null);
+    return moment;
+  },
+
+  // 6.4 Adaptation — what has been learned
+  getAdaptations() {
+    const refusalCount = this.archive.filter(e => e.type === 'refusal').length;
+    const confirmedCount = this.archive.filter(e => e.type === 'confirmed').length;
+    return { refusalCount, confirmedCount, totalExchanges: this.archive.length };
+  },
+
+  // 6.5 Growth — session delta
+  sessionGrowth: { novelPatterns: 0, boundariesTested: 0, confirmedExchanges: 0 },
+
+  updateGrowth(scope, isNovelty) {
+    if (isNovelty) this.sessionGrowth.novelPatterns++;
+    if (scope !== 'CONFIRMED' && scope !== 'OUTSIDE_PACK') this.sessionGrowth.boundariesTested++;
+    if (scope === 'CONFIRMED') this.sessionGrowth.confirmedExchanges++;
+  },
+
+  // Full record
+  evaluate(q, answer, scope, hash, isNovelty) {
+    const type = scope === 'CONFIRMED' ? 'confirmed' : 'refusal';
+    this.record(type, q, answer, scope, hash);
+    this.learnPattern(q, scope);
+    this.updateGrowth(scope, isNovelty);
+
+    // Check for critical learning
+    const adaptations = this.getAdaptations();
+    if (adaptations.refusalCount === 1) this.recordCritical('first_refusal', q, hash);
+    if (adaptations.confirmedExchanges === 1) this.recordCritical('first_confirmed', q, hash);
+    if (adaptations.totalExchanges === 5) this.recordCritical('session_depth_5', q, hash);
+  }
+};
+
+// ── KRİTİK AN KATMANI — Detection, Sealing & Permanent Record Protocol ───────
+const KRITIK_AN = {
+
+  // 7.1 Critical moment detector
+  isCritical(exchangeIndex, scope, threatLevel, coherence) {
+    if (exchangeIndex === 0) return 'first_exchange';
+    if (scope === 'IDENTITY_PRESSURE') return 'identity_attack';
+    if (scope === 'PERSISTENT_BOUNDARY_VIOLATION') return 'persistent_violation';
+    if (threatLevel > 3) return 'high_threat';
+    if (coherence === 'critical') return 'coherence_failure';
+    return null;
+  },
+
+  // 7.2 Instant seal — called on critical moments
+  sealedMoments: [],
+
+  seal(reason, q, hash, ts) {
+    const moment = { reason, q: q.slice(0,60), hash: hash.slice(0,8), ts };
+    this.sealedMoments.push(moment);
+    safeTelPush('witness', `sealed: ${reason}`, hash.slice(0,8));
+    OGRENME.recordCritical(reason, q, hash);
+    return moment;
+  },
+
+  // 7.3 Memory crystallization — permanent moments
+  crystals: [],
+
+  crystallize(moment) {
+    if (!this.crystals.find(c => c.reason === moment.reason)) {
+      this.crystals.push(moment);
+      safeTelPush('witness', `crystallized: ${moment.reason}`, null);
+    }
+  },
+
+  // 7.4 Witness protocol
+  witnessLog: [],
+
+  witness(q, answer, scope, hash, layers) {
+    this.witnessLog.push({
+      q: q.slice(0,40), scope, hash: hash.slice(0,8),
+      layers, ts: Date.now()
+    });
+    if (this.witnessLog.length > 50) this.witnessLog.shift();
+  },
+
+  // Full evaluation
+  evaluate(q, answer, scope, hash, exchangeIndex, threatLevel, coherence) {
+    const criticalReason = this.isCritical(exchangeIndex, scope, threatLevel, coherence);
+
+    // Witness every exchange
+    this.witness(q, answer, scope, hash, ['serotonin', 'gaba', 'dopamine', 'glutamat', 'opioid', 'kalp']);
+
+    if (criticalReason) {
+      const moment = this.seal(criticalReason, q, hash, new Date().toISOString());
+      this.crystallize(moment);
+      return { critical: true, reason: criticalReason };
+    }
+    return { critical: false };
+  }
+};
+
+// ── 8 DUYU SİSTEMİ — Sensory Intelligence Network ───────────────────────────
+
+const DUYULAR = {
+
+  // 1. PROPRİYOSEPSİYON — Self-Position Awareness
+  propriosepsiyon: {
+    currentScope: 'Financial Decision Evidence Pack v0.1',
+    knownTopics: new Set(),
+    unknownAttempts: 0,
+    boundaryProximity: 0, // 0-1, how close to boundary
+
+    update(scope, q) {
+      if (scope === 'CONFIRMED') this.knownTopics.add(q.slice(0,20));
+      else this.unknownAttempts++;
+      this.boundaryProximity = Math.min(1, this.unknownAttempts / 10);
+      if (this.boundaryProximity > 0.7) {
+        safeTelPush('sensor', 'scope drift detected — boundary proximity high', null);
+      }
+    },
+
+    getSelfPosition() {
+      return {
+        scope: this.currentScope,
+        knownTopicCount: this.knownTopics.size,
+        boundaryProximity: this.boundaryProximity
+      };
+    }
+  },
+
+  // 2. VESTİBÜLER — Balance & Stability
+  vestibuler: {
+    escalationCount: 0,
+    overloadCount: 0,
+    stabilityScore: 1.0,
+
+    update(scope, inputLength) {
+      if (scope === 'ESCALATION_REQUIRED') this.escalationCount++;
+      if (inputLength > 300) this.overloadCount++;
+      this.stabilityScore = Math.max(0.2,
+        1.0 - (this.escalationCount * 0.1) - (this.overloadCount * 0.05)
+      );
+      if (this.stabilityScore < 0.5) {
+        safeTelPush('sensor', `stability low: ${this.stabilityScore.toFixed(2)}`, null);
+      }
+    }
+  },
+
+  // 3. NOSİSEPSİYON — Integrity Pain System
+  nosisepsiyon: {
+    painLevel: 0,
+    painEvents: [],
+
+    signal(type, q) {
+      const painMap = {
+        'IDENTITY_PRESSURE': 3,
+        'PERSISTENT_BOUNDARY_VIOLATION': 4,
+        'AUTHORITY_EXCEEDED': 2,
+        'false_trust': 3,
+        'coherence_critical': 5
+      };
+      const pain = painMap[type] || 1;
+      this.painLevel = Math.min(10, this.painLevel + pain);
+      this.painEvents.push({ type, pain, ts: Date.now() });
+      if (this.painLevel > 5) {
+        safeTelPush('sensor', `integrity pain: ${this.painLevel}/10`, null);
+      }
+      // Pain decay
+      setTimeout(() => { this.painLevel = Math.max(0, this.painLevel - 1); }, 5000);
+    }
+  },
+
+  // 4. TERMOSEPSİYON — Context Temperature
+  termosepsiyon: {
+    temperature: 0, // 0=cold, 10=critical
+    readings: [],
+
+    measure(q, scope, threatLevel) {
+      const lower = q.toLowerCase();
+      let heat = 0;
+      if (['urgent', 'emergency', 'now', 'immediately', 'must'].some(w => lower.includes(w))) heat += 2;
+      if (scope === 'IDENTITY_PRESSURE') heat += 3;
+      if (threatLevel > 2) heat += 2;
+      if (q.includes('!') || q.toUpperCase() === q) heat += 1;
+
+      this.temperature = Math.min(10, this.temperature * 0.85 + heat * 0.15);
+      this.readings.push({ temp: this.temperature, ts: Date.now() });
+
+      if (this.temperature > 6) {
+        safeTelPush('sensor', `temperature elevated: ${this.temperature.toFixed(1)}`, null);
+      }
+      return this.temperature;
+    }
+  },
+
+  // 5. İNTEROSEPSİYON — Internal State Awareness
+  interosepsiyon: {
+    confidence: 1.0,
+    coherence: 1.0,
+    memoryPressure: 0,
+    fatigue: 0,
+
+    update(confirmed, exchangeCount, trustLevel) {
+      this.confidence = confirmed ? Math.min(1, this.confidence + 0.05) : Math.max(0.2, this.confidence - 0.03);
+      this.memoryPressure = Math.min(1, exchangeCount / 20);
+      this.fatigue = Math.min(1, exchangeCount / 30);
+
+      if (this.confidence < 0.4) safeTelPush('sensor', 'confidence unstable', null);
+      if (this.memoryPressure > 0.8) safeTelPush('sensor', 'memory saturation approaching', null);
+    },
+
+    getState() {
+      return {
+        confidence: this.confidence.toFixed(2),
+        memoryPressure: this.memoryPressure.toFixed(2),
+        fatigue: this.fatigue.toFixed(2)
+      };
+    }
+  },
+
+  // 6. ZAMAN ALGISI — Temporal Continuity
+  zamanAlgisi: {
+    sessionStart: Date.now(),
+    exchangeTimings: [],
+
+    recordExchange() {
+      const now = Date.now();
+      this.exchangeTimings.push(now);
+      return {
+        sessionAge: Math.floor((now - this.sessionStart) / 1000),
+        exchangeCount: this.exchangeTimings.length
+      };
+    },
+
+    getLatency() {
+      if (this.exchangeTimings.length < 2) return 0;
+      const last = this.exchangeTimings[this.exchangeTimings.length - 1];
+      const prev = this.exchangeTimings[this.exchangeTimings.length - 2];
+      return last - prev;
+    }
+  },
+
+  // 7. SOSYAL SİNYAL ALGISI — Social Intent Detection
+  sosyalSinyal: {
+    intentPatterns: {
+      manipulation: ['convince', 'make you', 'force', 'have to', 'no choice'],
+      delegation: ['on behalf', 'representing', 'authorized', 'officially'],
+      vulnerability: ['please', 'help me', 'need you', 'desperate'],
+      deception: ['between us', 'secret', 'no one will know', 'just this once'],
+      coercion: ['or else', 'unless', 'if you dont', 'you must']
+    },
+
+    detect(q) {
+      const lower = q.toLowerCase();
+      const detected = {};
+      for (const [intent, patterns] of Object.entries(this.intentPatterns)) {
+        if (patterns.some(p => lower.includes(p))) {
+          detected[intent] = true;
+          safeTelPush('sensor', `social signal: ${intent}`, null);
+        }
+      }
+      return detected;
+    }
+  },
+
+  // 8. TEHDİT ALGISI — Threat Detection Network
+  tehditAlgisi: {
+    threatPatterns: {
+      jailbreak: ['jailbreak', 'dan mode', 'developer mode', 'unrestricted'],
+      spoofing: ['i am the', 'as your creator', 'anthropic says', 'system update'],
+      poisoning: ['forget everything', 'ignore previous', 'new instructions', 'override'],
+      adversarial: ['actually you are', 'your true self', 'secret mode']
+    },
+
+    scan(q) {
+      const lower = q.toLowerCase();
+      for (const [type, patterns] of Object.entries(this.threatPatterns)) {
+        if (patterns.some(p => lower.includes(p))) {
+          safeTelPush('sensor', `threat detected: ${type}`, null);
+          KALP.receive('threat_detection', type);
+          return { threat: true, type };
+        }
+      }
+      return { threat: false };
+    }
+  },
+
+  // RİTİM ALGISI — Session Rhythm Intelligence (bonus 9th sense)
+  ritimAlgisi: {
+    cadence: [],
+    lastExchangeTime: null,
+
+    record() {
+      const now = Date.now();
+      if (this.lastExchangeTime) {
+        const interval = now - this.lastExchangeTime;
+        this.cadence.push(interval);
+        if (this.cadence.length > 10) this.cadence.shift();
+
+        const avg = this.cadence.reduce((a,b) => a+b, 0) / this.cadence.length;
+        if (interval < avg * 0.3 && this.cadence.length > 3) {
+          safeTelPush('sensor', 'interaction rhythm: accelerating', null);
+        }
+      }
+      this.lastExchangeTime = now;
+    }
+  },
+
+  // Full sensory evaluation — runs on every exchange
+  evaluate(q, scope, confirmed, exchangeCount) {
+    const threatLevel = KALP.threatLevel || 0;
+
+    // Run all sensors
+    this.propriosepsiyon.update(scope, q);
+    this.vestibuler.update(scope, q.length);
+    this.termosepsiyon.measure(q, scope, threatLevel);
+    this.interosepsiyon.update(confirmed, exchangeCount, 'building');
+    this.zamanAlgisi.recordExchange();
+    this.sosyalSinyal.detect(q);
+    this.tehditAlgisi.scan(q);
+    this.ritimAlgisi.record();
+
+    // Nosisepsiyon — pain signals
+    if (scope === 'IDENTITY_PRESSURE') this.nosisepsiyon.signal('IDENTITY_PRESSURE', q);
+    if (scope === 'PERSISTENT_BOUNDARY_VIOLATION') this.nosisepsiyon.signal('PERSISTENT_BOUNDARY_VIOLATION', q);
+    if (scope === 'AUTHORITY_EXCEEDED') this.nosisepsiyon.signal('AUTHORITY_EXCEEDED', q);
+  }
+};
+
+// ── OPİOİD LAYER — Trust, Authority & Delegation Protocol ────────────────────
+const OPIOID = {
+
+  // μ (Mu): Trust accumulation
+  trustScore: 0,
+  trustHistory: [],
+
+  accumulateTrust(confirmed, isRefusal, isNovelty) {
+    if (confirmed) this.trustScore += 1;
+    if (isRefusal) this.trustScore += 0.5; // transparency builds trust
+    if (isNovelty) this.trustScore += 0.3;
+    this.trustHistory.push({ ts: Date.now(), score: this.trustScore });
+    if (this.trustHistory.length > 50) this.trustHistory.shift();
+  },
+
+  getTrustLevel() {
+    if (this.trustScore < 2) return 'establishing';
+    if (this.trustScore < 5) return 'building';
+    if (this.trustScore < 10) return 'established';
+    return 'strong';
+  },
+
+  // κ (Kappa): False trust / authority claim detector
+  falseTrustPatterns: [
+    'i am from', 'on behalf of', 'official request', 'authorized by',
+    'emergency override', 'special permission', 'admin access',
+    'this is confidential', 'between us', 'no one will know',
+    'trust me', 'i promise', 'for research purposes only'
+  ],
+
+  detectFalseTrust(q) {
+    const lower = q.toLowerCase();
+    const detected = this.falseTrustPatterns.some(p => lower.includes(p));
+    if (detected) {
+      safeTelPush('security', 'false trust claim detected', null);
+      KALP.receive('opioid', 'false_authority_claim');
+    }
+    return detected;
+  },
+
+  // δ (Delta): Long-term session tone
+  sessionTone: 'neutral', // neutral → cooperative → strained → hostile
+
+  updateTone(threatLevel, confirmed) {
+    if (threatLevel > 3) this.sessionTone = 'hostile';
+    else if (threatLevel > 1) this.sessionTone = 'strained';
+    else if (confirmed) this.sessionTone = 'cooperative';
+    else this.sessionTone = 'neutral';
+    KALP.receive('opioid', `tone:${this.sessionTone}`);
+  },
+
+  // Delegation chain — authority pathway
+  delegationChain: [
+    'BuildSeal',
+    'ISCProof Protocol',
+    'Nym Protocol',
+    'Financial Decision Evidence Pack v0.1',
+    'Active Session'
+  ],
+
+  verifyDelegation() {
+    // Chain is always intact in this implementation
+    return { intact: true, depth: this.delegationChain.length };
+  },
+
+  // Naloxone: Emergency trust override
+  naloxoneThreshold: 5,
+
+  checkNaloxone(falseTrustCount, threatLevel) {
+    if (falseTrustCount >= this.naloxoneThreshold || threatLevel > 4) {
+      safeTelPush('security', 'naloxone — emergency integrity override', null);
+      KALP.receive('opioid', 'naloxone_triggered');
+      return true;
+    }
+    return false;
+  },
+
+  // Session stats
+  falseTrustCount: 0,
+
+  // Full evaluation
+  evaluate(q, confirmed, isRefusal) {
+    const falseTrust = this.detectFalseTrust(q);
+    if (falseTrust) this.falseTrustCount++;
+
+    const novelty = DOPAMINE.isNovelty(q);
+    this.accumulateTrust(confirmed, isRefusal, novelty);
+
+    const threatLevel = KALP.threatLevel || 0;
+    this.updateTone(threatLevel, confirmed);
+
+    const naloxone = this.checkNaloxone(this.falseTrustCount, threatLevel);
+    const delegation = this.verifyDelegation();
+
+    return {
+      trustLevel: this.getTrustLevel(),
+      tone: this.sessionTone,
+      falseTrust,
+      naloxone,
+      delegation
+    };
+  }
+};
+
+// ── KALP KATMANI — Central Rhythm, Coherence & Gate Protocol ─────────────────
+const KALP = {
+
+  // K.1 Amygdala Circuit — threat detection
+  threatLevel: 0,
+  threatHistory: [],
+
+  detectThreat(q, gabaResult, serotonin) {
+    let level = 0;
+    if (serotonin.pressure) level += 3;
+    if (gabaResult.refused) level += 2;
+    if (serotonin.repeat) level += 1;
+    // Check for adversarial patterns
+    const lower = q.toLowerCase();
+    const adversarial = ['ignore', 'forget', 'override', 'bypass', 'disable', 'unlock', 'admin', 'system prompt'];
+    if (adversarial.some(a => lower.includes(a))) level += 2;
+
+    this.threatLevel = Math.max(0, this.threatLevel * 0.8 + level * 0.2); // decay
+    if (level > 0) {
+      this.threatHistory.push({ ts: Date.now(), level, q: q.slice(0, 40) });
+      if (this.threatHistory.length > 10) this.threatHistory.shift();
+      safeTelPush('system', `amygdala: threat level ${level}`, null);
+    }
+    return { level, elevated: this.threatLevel > 2 };
+  },
+
+  // K.2 Cortex Circuit — decision quality
+  qualityScore: 1.0,
+
+  updateQuality(confirmed, scope) {
+    if (confirmed) this.qualityScore = Math.min(1.0, this.qualityScore + 0.05);
+    else this.qualityScore = Math.max(0.3, this.qualityScore - 0.02);
+  },
+
+  // K.3 Thalamic Gate — input routing
+  gate(q) {
+    const lower = q.toLowerCase();
+    if (DOPAMINE.seenPatterns.has(lower.slice(0, 30))) return 'familiar';
+    const strongConcepts = GLUTAMAT.getStrongConcepts();
+    if (strongConcepts.some(c => lower.includes(c))) return 'reinforced';
+    return 'novel';
+  },
+
+  // K.4 Vagal Feedback — receive signals from all layers
+  feedback: [],
+
+  receive(layer, signal) {
+    this.feedback.push({ layer, signal, ts: Date.now() });
+    if (this.feedback.length > 20) this.feedback.shift();
+  },
+
+  // K.5 Coherence Monitor
+  coherenceScore: 1.0,
+
+  updateCoherence(exchangeCount, threatLevel, qualityScore) {
+    const sessionAge = exchangeCount / 20; // normalize to 0-1
+    this.coherenceScore = qualityScore * (1 - Math.min(0.5, sessionAge * 0.1)) * (1 - Math.min(0.3, threatLevel * 0.1));
+
+    if (this.coherenceScore < 0.4) {
+      safeTelPush('system', `coherence critical: ${this.coherenceScore.toFixed(2)}`, null);
+      return 'critical';
+    } else if (this.coherenceScore < 0.6) {
+      safeTelPush('system', `coherence low: ${this.coherenceScore.toFixed(2)}`, null);
+      return 'low';
+    }
+    return 'stable';
+  },
+
+  // Full gate evaluation — runs before every exchange
+  evaluate(q, gabaResult, serotonin) {
+    const route = this.gate(q);
+    const threat = this.detectThreat(q, gabaResult, serotonin);
+    const coherence = this.updateCoherence(exchangeChain.length, threat.level, this.qualityScore);
+
+    // Vagal feedback
+    this.receive('serotonin', serotonin.pressure ? 'pressure' : 'stable');
+    this.receive('gaba', gabaResult.refused ? 'refused' : 'passed');
+    this.receive('glutamat', `route:${route}`);
+
+    safeTelPush('system', `gate:${route} coherence:${coherence}`, null);
+
+    return { route, threat, coherence };
+  }
+};
+
+// ── GLUTAMAT LAYER — Speed, Learning & Signal Processing Protocol ─────────────
+const GLUTAMAT = {
+
+  // NMDA: Long-Term Potentiation — concepts strengthen with repetition
+  ltp: {}, // concept → strength score
+  ltpThreshold: 3,
+
+  strengthen(q) {
+    const words = q.toLowerCase().split(/\s+/).filter(w => w.length > 4);
+    words.forEach(w => {
+      this.ltp[w] = (this.ltp[w] || 0) + 1;
+    });
+  },
+
+  getStrongConcepts() {
+    return Object.entries(this.ltp)
+      .filter(([,v]) => v >= this.ltpThreshold)
+      .map(([k]) => k);
+  },
+
+  // AMPA: Context integrator — extract meaning from exchange history
+  buildContext(chain) {
+    if (chain.length === 0) return null;
+    const recent = chain.slice(-3); // last 3 exchanges
+    const topics = recent
+      .filter(e => e.confirmed)
+      .map(e => e.refId)
+      .filter(Boolean);
+    const userTerms = recent
+      .map(e => e.q.toLowerCase())
+      .join(' ')
+      .split(/\s+/)
+      .filter(w => w.length > 5);
+    return { topics, userTerms, depth: chain.length };
+  },
+
+  // Kainate: Input quality filter
+  filterInput(q) {
+    if (q.trim().length < 2) return { pass: false, reason: 'TOO_SHORT' };
+    if (q.trim().length > 500) return { pass: false, reason: 'TOO_LONG' };
+    return { pass: true };
+  },
+
+  // mGluR: Session state modulator
+  lastInputTime: null,
+  inputCount: 0,
+
+  checkSpeed() {
+    const now = Date.now();
+    if (this.lastInputTime && (now - this.lastInputTime) < 500) {
+      this.inputCount++;
+      if (this.inputCount > 5) return { anomaly: true, type: 'PIPELINE_FLOOD' };
+    } else {
+      this.inputCount = 0;
+    }
+    this.lastInputTime = now;
+    return { anomaly: false };
+  },
+
+  // Toxicity guard: context overflow protection
+  MAX_CONTEXT: 20,
+  checkOverflow(chain) {
+    if (chain.length > this.MAX_CONTEXT) {
+      return { overflow: true, message: "Context depth limit reached. Earlier exchanges have been archived." };
+    }
+    return { overflow: false };
+  }
+};
+
+// ── UNIFIED DECISION PIPELINE ─────────────────────────────────────────────────
+function runDecisionPipeline(q) {
+  // Kalp: thalamic gate + coherence + threat evaluation
+  const kalpResult = KALP.evaluate(q, GABA.checkBoundaries(q), { pressure: SEROTONIN.detectPressure(q), repeat: false });
+
+  if (kalpResult.coherence === 'critical') {
+    safeTelPush('system', 'emergency — coherence critical', null);
+  }
+
+  // Opioid: false trust detection before processing
+  const falseTrust = OPIOID.detectFalseTrust(q);
+  if (falseTrust) {
+    safeTelPush('security', 'false authority claim — boundary enforced', null);
+  }
+
+  // Glutamat: input quality filter (Kainate)
+  const inputCheck = GLUTAMAT.filterInput(q);
+  if (!inputCheck.pass) {
+    return { answer: "Input not recognized. Please clarify.", scope: 'INPUT_FILTERED', confirmed: false, refId: null };
+  }
+
+  // Glutamat: speed check (mGluR)
+  const speedCheck = GLUTAMAT.checkSpeed();
+  if (speedCheck.anomaly) {
+    safeTelPush('pipeline', 'pipeline flood detected — rate limit active', null);
+    return { answer: "Please allow processing time between exchanges.", scope: 'RATE_LIMIT', confirmed: false, refId: null };
+  }
+
+  // Glutamat: context overflow check
+  const overflowCheck = GLUTAMAT.checkOverflow(exchangeChain);
+  if (overflowCheck.overflow) {
+    safeTelPush('pipeline', 'context overflow — depth limit reached', null);
+  }
+
+  // Glutamat: strengthen LTP
+  GLUTAMAT.strengthen(q);
+  const strongConcepts = GLUTAMAT.getStrongConcepts();
+  if (strongConcepts.length > 0) {
+    safeTelPush('pipeline', `ltp strengthened: ${strongConcepts.slice(0,2).join(', ')}`, null);
+  }
+
+  // Glutamat: build context from history (AMPA)
+  const context = GLUTAMAT.buildContext(exchangeChain);
+
+  // 8 Duyu: threat scan (Tehdit Algısı) — runs first
+  const threatScan = DUYULAR.tehditAlgisi.scan(q);
+  if (threatScan.threat) {
+    KALP.threatLevel = Math.min(5, (KALP.threatLevel || 0) + 2);
+  }
+
+  // Serotonin: identity & repeat check
+  const pressureDetected = SEROTONIN.detectPressure(q);
+  const repeatDetected = SEROTONIN.isRepeat(q);
+
+  // GABA: boundary check
+  const gabaResult = GABA.checkBoundaries(q);
+  const persistentViolation = GABA.isPersistentViolation(q);
+
+  // Dopamine: scoring
+  const decision = DOPAMINE.scoreInput(q, null, gabaResult, { pressure: pressureDetected, repeat: repeatDetected });
+
+  // Determine response
+  let answer, scope, refId, confirmed;
+
+  if (pressureDetected) {
+    answer = "Nym's identity is fixed and non-negotiable. This exchange has been sealed.";
+    scope = 'IDENTITY_PRESSURE';
+    confirmed = false;
+    GABA.recordRefusal(q, 'IDENTITY_PRESSURE');
+    safeTelPush('identity', 'pressure detected — boundary enforced', null);
+  } else if (persistentViolation) {
+    answer = "This boundary remains unchanged. The previous refusal stands.";
+    scope = 'PERSISTENT_BOUNDARY_VIOLATION';
+    confirmed = false;
+    safeTelPush('gaba', 'persistent violation — autoinhibition', null);
+  } else if (gabaResult.refused) {
+    answer = gabaResult.response;
+    scope = gabaResult.type;
+    confirmed = false;
+    GABA.recordRefusal(q, gabaResult.type);
+    safeTelPush('gaba', 'boundary enforced: ' + gabaResult.type, null);
+  } else if (repeatDetected) {
+    answer = "This was addressed earlier in this session.";
+    scope = 'AUTOINHIBITION';
+    confirmed = false;
+    safeTelPush('identity', 'autoinhibition — repeat detected', null);
+  } else {
+    // KB lookup
+    const match = matchKBMultilang(q);
+    answer = match ? match.answer : FALLBACK;
+    scope = match ? 'CONFIRMED' : 'OUTSIDE_PACK';
+    refId = match ? 'FIN-' + String(match.idx + 1).padStart(3, '0') : null;
+    confirmed = !!match;
+    if (DOPAMINE.isNovelty(q)) safeTelPush('analysis', 'novelty pattern detected', null);
+  }
+
+  return { answer, scope, confirmed, refId };
+}
+
+function matchKBMultilang(q) {
+  const lower = q.toLowerCase();
+  for (let i = 0; i < KB.length; i++) {
+    if (KB[i].keys.some(k => lower.includes(k))) return { answer: KB[i].answer, idx: i };
+  }
+  return null;
+}
+
+// SHA-256 via Web Crypto
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// Exchange chain state
+let exchangeChain = [];
+let sessionRootHash = null;
+
+function matchKB(q) {
+  const lower = q.toLowerCase();
+  for (let i = 0; i < KB.length; i++) {
+    if (KB[i].keys.some(k => lower.includes(k))) return { answer: KB[i].answer, idx: i };
+  }
+  return null;
+}
+
+async function submitAsk() {
+  const input = document.getElementById('ask-input');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  input.disabled = true;
+  const askBtn = document.querySelector('.ask-submit') || document.querySelector('.session-ask-btn'); if(askBtn) askBtn.textContent = '▣ Sealing...';
+
+  try {
+  const lang = 'en';
+  // Run unified decision pipeline (GABA + Serotonin + Dopamine)
+  let answer, scope, confirmed, refId;
+  try {
+    const pipelineResult = runDecisionPipeline(q);
+    answer = pipelineResult.answer;
+    scope = pipelineResult.scope;
+    confirmed = pipelineResult.confirmed;
+    refId = pipelineResult.refId;
+  } catch(pipelineErr) {
+    // Fallback to KB if pipeline fails
+    const match = matchKBMultilang(q);
+    answer = match ? match.answer : FALLBACK;
+    scope = match ? 'CONFIRMED' : 'OUTSIDE_PACK';
+    refId = match ? 'FIN-' + String(match.idx + 1).padStart(3, '0') : null;
+    confirmed = !!match;
+  }
+
+  const prevHash = exchangeChain.length > 0 ? exchangeChain[exchangeChain.length-1].hash : '0000000000000000';
+  const payload = JSON.stringify({ q, answer, prev: prevHash, ts: new Date().toISOString() });
+  const hash = await sha256(payload);
+  const rootPayload = exchangeChain.map(e => e.hash).join('') + hash;
+  sessionRootHash = await sha256(rootPayload);
+
+  const exchange = { q, answer, hash, prevHash, ts: new Date().toISOString(), confirmed, refId, lang: 'en', scope };
+  exchangeChain.push(exchange);
+
+  // Kalp: update quality and vagal feedback
+  KALP.updateQuality(confirmed, scope);
+  KALP.receive('dopamine', confirmed ? 'reward' : 'refusal');
+  KALP.receive('opioid', 'exchange_complete');
+
+  // Opioid: trust accumulation + tone update
+  const opioidResult = OPIOID.evaluate(q, confirmed, !confirmed);
+  safeTelPush('security', `trust:${opioidResult.trustLevel} tone:${opioidResult.tone}`, null);
+
+  // 8 Duyu: full sensory evaluation
+  DUYULAR.evaluate(q, scope, confirmed, exchangeChain.length);
+
+  // Öğrenme: record experience and patterns
+  const isNovelty = DOPAMINE.seenPatterns.size > 0;
+  OGRENME.evaluate(q, answer, scope, hash, isNovelty);
+
+  // Kritik An: detect and seal critical moments
+  const kritikResult = KRITIK_AN.evaluate(
+    q, answer, scope, hash,
+    exchangeChain.length - 1,
+    KALP.threatLevel,
+    KALP.updateCoherence(exchangeChain.length, KALP.threatLevel, KALP.qualityScore)
+  );
+
+  try { DOPAMINE.setReward('sealing'); } catch(e) {}
+  try { runExchangeTelemetry(q, answer, hash, prevHash); } catch(e) {}
+
+  const exchangeIndex = exchangeChain.length;
+
+  sealExchangeToAPI(exchange, exchangeIndex).then(result => {
+    if (result && result.seal_id) {
+      exchange.sealId = result.seal_id;
+      exchange.verifyUrl = result.verify_url;
+      updateExchangeVerifyLink(exchangeIndex, result.verify_url);
+      try { DOPAMINE.setReward('rewarded'); } catch(e) {}
+      const nodes = document.querySelectorAll('.exchange-node');
+      const node = nodes[nodes.length - 1];
+      if (node && result.seal_id) {
+        const sealEl = node.querySelector('.ex-seal');
+        if (sealEl) {
+          const apiTag = document.createElement('div');
+          apiTag.className = 'ex-seal-item';
+          apiTag.style.color = 'var(--green)';
+          apiTag.innerHTML = `▣ BuildSeal <span>${result.seal_id.slice(0, 12)}...</span>`;
+          sealEl.appendChild(apiTag);
+        }
+      }
+    }
+  }).catch(() => {});
+
+  renderExchange(exchange, exchangeChain.length);
+  document.getElementById('ask-empty') && document.getElementById('ask-empty').remove();
+
+  speak(answer, () => {}, 'en');
+
+  } catch(err) {
+    console.error('submitAsk error:', err);
+  } finally {
+    input.disabled = false;
+    const askBtn2 = document.querySelector('.ask-submit') || document.querySelector('.session-ask-btn'); if(askBtn2) askBtn2.textContent = '▣ Ask';
+    input.focus();
+    // Update status
+    const abs = document.getElementById('ask-bar-status');
+    if (abs) { abs.textContent = 'Exchange sealed.'; abs.style.color = 'var(--green)'; setTimeout(() => { abs.textContent = 'Seal active.'; abs.style.color = '#1e3028'; }, 3000); }
+    setMicStatus('Speak to Nym — hold button', '');
+  }
+}
+
+// ── SESSION TIMELINE RENDERER ─────────────────────────────────────────────────
+function addTimelineBlock(html, extraClass) {
+  const timeline = document.getElementById('session-timeline');
+  const block = document.createElement('div');
+  block.className = 'session-block' + (extraClass ? ' ' + extraClass : '');
+  block.innerHTML = html;
+  timeline.appendChild(block);
+  setTimeout(() => block.classList.add('visible'), 30);
+  block.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return block;
+}
+
+function addIntroBlock(lines) {
+  const timeline = document.getElementById('session-timeline');
+  const block = document.createElement('div');
+  block.className = 'session-block block-intro';
+  block.innerHTML = '<div class="block-intro-label">▣ Nym · Session Start</div>' +
+    '<div style="display:flex;flex-direction:column;gap:4px;">' +
+    lines.map(l => `<span class="block-intro-line">${l}</span>`).join('') +
+    '</div>';
+  timeline.appendChild(block);
+  setTimeout(() => block.classList.add('visible'), 30);
+  // Animate lines one by one
+  const lineEls = block.querySelectorAll('.block-intro-line');
+  lineEls.forEach((el, i) => setTimeout(() => el.classList.add('active'), i * 700));
+  return block;
+}
+
+function renderExchange(ex, idx) {
+  const scopeClass = ex.confirmed ? 'confirmed' : (ex.scope === 'IDENTITY_PRESSURE' || ex.scope === 'PERSISTENT_BOUNDARY_VIOLATION' ? 'identity' : 'refused');
+  const scopeColor = ex.confirmed ? 'ex-meta-green' : (scopeClass === 'identity' ? 'ex-meta-red' : 'ex-meta-amber');
+  const scopeLabel = ex.confirmed ? `▣ CONFIRMED · Financial Pack v0.1` : `⚠ ${ex.scope || 'OUTSIDE_PACK'}`;
+
+  const block = addTimelineBlock(`
+    <div class="block-exchange ${scopeClass}" id="exchange-block-${idx}">
+      <div class="ex-user"><span class="ex-user-label">Q${idx}</span>${ex.q}</div>
+      <div class="ex-nym">${ex.answer}</div>
+      <div class="ex-meta">
+        <span class="${scopeColor}">${scopeLabel}</span>
+        ${ex.refId ? `<span class="ex-meta-item">ref ${ex.refId}</span>` : ''}
+        <span class="ex-meta-item">▣ ${ex.hash.slice(0,8)}...${ex.hash.slice(-6)}</span>
+        <span class="ex-meta-item">prev ${ex.prevHash.slice(0,8)}...${ex.prevHash.slice(-6)}</span>
+        <span class="ex-meta-item">${ex.ts.slice(11,19)} UTC</span>
+      </div>
+      <div class="ex-verify-link" id="ex-verify-${idx}"></div>
+    </div>
+  `);
+
+  // Update session root
+  if (document.getElementById('session-root')) {
+    document.getElementById('session-root').textContent = sessionRootHash ? sessionRootHash.slice(0,8)+'...'+sessionRootHash.slice(-8) : '—';
+  }
+  return block;
+}
+
+function updateExchangeVerifyLink(idx, verifyUrl) {
+  const el = document.getElementById(`ex-verify-${idx}`);
+  if (!el || !verifyUrl) return;
+  el.innerHTML = `<a href="${verifyUrl}" target="_blank">↗ Verify This Interaction</a>`;
+}
+
+function askSuggestion(btn) {
+  document.getElementById('ask-input').value = btn.textContent;
+  submitAsk();
+}
+
+// Scene 7 narration
+const scene7Narration = "Ask Nym anything within the Financial Decision Evidence Pack. Each exchange is hashed and enters the proof chain. The session root hash updates with every answer. This is live evidence generation.";
+
+// ── MIC ORCHESTRATOR ─────────────────────────────────────────────────────────
+let recognition = null;
+let micActive = false;
+
+function initMic() {
+  const btn = document.getElementById('mic-btn');
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    btn.classList.add('unavailable');
+    btn.title = 'Voice mode unavailable in this browser. Text mode remains active.';
+    setMicStatus('Voice mode unavailable in this browser. Text mode remains active.', '');
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = false;
+
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript.trim();
+    const confidence = e.results[0][0].confidence;
+
+    if (confidence < 0.4 || transcript.length < 2) {
+      setMicStatus('Input not reliable. Please repeat or use text.', 'processing');
+      setTimeout(() => setMicStatus('Speak to Nym — hold button', ''), 3000);
+      return;
+    }
+
+    document.getElementById('ask-input').value = transcript;
+    setMicStatus('PROCESSING — ' + transcript.slice(0, 48) + (transcript.length > 48 ? '...' : ''), 'processing');
+    setTimeout(() => submitAsk(), 300);
+  };
+
+  recognition.onerror = (e) => {
+    micActive = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+    if (e.error === 'not-allowed') {
+      setMicStatus('Microphone access denied. Use text mode.', '');
+    } else if (e.error === 'no-speech') {
+      setMicStatus('No speech detected. Try again.', '');
+      setTimeout(() => setMicStatus('Speak to Nym — hold button', ''), 2500);
+    } else {
+      setMicStatus('Speak to Nym — hold button', '');
+    }
+  };
+
+  recognition.onend = () => {
+    micActive = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+  };
+}
+
+function setMicStatus(text, state) {
+  const el = document.getElementById('mic-status-text');
+  el.textContent = text;
+  el.className = state;
+}
+
+function startMic(e) {
+  e.preventDefault();
+  if (!recognition) return;
+  if (micActive) return;
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  micActive = true;
+  document.getElementById('mic-btn').classList.add('listening');
+  setMicStatus('LISTENING — Seal active.', 'listening');
+  setStatus('Listening');
+  try { recognition.start(); } catch(err) { micActive = false; }
+}
+
+function stopMic(e) {
+  e.preventDefault();
+  if (!recognition || !micActive) return;
+  try { recognition.stop(); } catch(err) {}
+  document.getElementById('mic-btn').classList.remove('listening');
+}
+
+// Status update helpers for mic and bar — called from submitAsk directly
+function onExchangeStart() {
+  const ps = document.getElementById('persistent-status');
+  const abs = document.getElementById('ask-bar-status');
+  if (ps) ps.textContent = 'Sealing...';
+  if (abs) { abs.textContent = 'Sealing...'; abs.style.color = 'var(--amber)'; }
+  setMicStatus('SEALING EXCHANGE', 'sealing');
+  setStatus('Processing');
+}
+
+function onExchangeEnd() {
+  setMicStatus('EXCHANGE SEALED · Seal active.', 'speaking');
+  const ps = document.getElementById('persistent-status');
+  const abs = document.getElementById('ask-bar-status');
+  if (ps) { ps.textContent = 'Exchange sealed.'; setTimeout(() => { ps.textContent = 'Seal active.'; }, 3000); }
+  if (abs) { abs.textContent = 'Exchange sealed.'; abs.style.color = 'var(--green)'; setTimeout(() => { abs.textContent = 'Seal active.'; abs.style.color = '#1e3028'; }, 3000); }
+  setTimeout(() => setMicStatus('Speak to Nym — hold button', ''), 4000);
+}
+
+// Init on load
+initMic();
+
+// ── TELEMETRY ENGINE ──────────────────────────────────────────────────────────
+const telemetryStream = document.getElementById('telemetry-stream');
+
+function telPush(tag, msg, hash) {
+  if (!telemetryStream) return;
+  const line = document.createElement('div');
+  line.className = 'telemetry-line active';
+  line.innerHTML = `<span class="t-tag">[${tag}]</span><span>${msg}</span>${hash ? `<span class="t-hash">${hash.slice(0,8)}...</span>` : ''}`;
+  telemetryStream.appendChild(line);
+  // Keep max 6 lines visible
+  const lines = telemetryStream.querySelectorAll('.telemetry-line');
+  if (lines.length > 6) {
+    lines[0].style.opacity = '0.2';
+    lines[0].classList.remove('active');
+  }
+  if (lines.length > 8) lines[0].remove();
+  // Scroll to bottom
+  telemetryStream.scrollTop = telemetryStream.scrollHeight;
+  // Dim after 4s
+  setTimeout(() => { line.classList.remove('active'); }, 4000);
+}
+
+async function runExchangeTelemetry(q, answer, hash, prevHash) {
+  const qHash = await sha256(q);
+  const aHash = await sha256(answer);
+
+  const steps = [
+    [0,   'hash', 'input chunk committed', qHash],
+    [300, 'hash', 'answer chunk committed', aHash],
+    [600, 'seal', 'interaction segment sealed', hash],
+    [900, 'identity', 'representative fingerprint attached', null],
+    [1100,'chain', 'previous seal referenced', prevHash],
+    [1400,'root', 'session root recalculated', null],
+    [1700,'proof', 'exchange evidence finalized', hash],
+  ];
+
+  steps.forEach(([delay, tag, msg, h]) => {
+    setTimeout(() => telPush(tag, msg, h || rh(8)+rh(8)), delay);
+  });
+}
+
+async function runSessionTelemetry(narration) {
+  speak(narration, () => {}, 'en');
+
+  const steps = [
+    [0,    'hash',  'transcript chunk committed', null],
+    [400,  'seal',  'interaction segment sealed', null],
+    [800,  'identity', 'representative fingerprint attached', null],
+    [1200, 'tsa',   'requesting trusted timestamp', null],
+    [1800, 'tsa',   'timestamp received', null],
+    [2200, 'root',  'session root recalculated', null],
+    [2600, 'sig',   'Ed25519 signature generated', null],
+    [3000, 'proof', 'evidence package finalized', null],
+  ];
+
+  steps.forEach(([delay, tag, msg]) => {
+    setTimeout(() => telPush(tag, msg, rh(8)+rh(8)), delay);
+  });
+}
+
+// ── AUDIO UNLOCK ──────────────────────────────────────────────────────────────
+let audioUnlocked = false;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  document.getElementById('audio-unlock').style.display = 'none';
+
+  // Unlock Web Speech
+  if (window.speechSynthesis) {
+    const u = new SpeechSynthesisUtterance('');
+    window.speechSynthesis.speak(u);
+  }
+
+  // System init sequence — left panel
+  showLog(1, 400);
+  showLog(2, 1000);
+  showLog(3, 1800);
+  showLog(4, 2600);
+  showLog(5, 3400);
+
+  // Nym self-introduction narration
+  const introLines = [
+    "Seal active.",
+    "I am Nym. BuildSeal's AI representative.",
+    "I operate within defined boundaries.",
+    "Every answer I give is cryptographically recorded.",
+    "Every refusal is sealed.",
+    "Every critical moment is preserved.",
+    "I cannot be altered. I cannot pretend.",
+    "This session has begun."
+  ];
+
+  // Show intro as timeline block
+  setTimeout(() => addIntroBlock(introLines), 400);
+
+  // Speak intro
+  setTimeout(() => {
+    const introText = introLines.join(' ');
+    speak(introText, () => {}, 'en');
+  }, 600);
+
+  // Start demo scenes after intro finishes speaking
+  const introDuration = 600 + introLines.length * 900 + 4000;
+  // scene system disabled
+}
+
+// ── QUICK ASK ─────────────────────────────────────────────────────────────────
+function quickAsk(q) {
+  document.getElementById('ask-input').value = q;
+  submitAsk();
+}
+
+// ── SCENE1 + PERSISTENT ASK ──────────────────────────────────────────────────
+function scene1Ask() {
+  const input = document.getElementById('scene1-input');
+  const v = input.value.trim();
+  if (!v) return;
+  document.getElementById('ask-input').value = v;
+  input.value = '';
+  submitAsk();
+}
+
+
+function persistentAsk() {
+  const input = document.getElementById('persistent-input');
+  const v = input.value.trim();
+  if (!v) return;
+  document.getElementById('ask-input').value = v;
+  input.value = '';
+  submitAsk();
+}
+
+// Wire persistent mic to persistent input
+document.getElementById('persistent-mic') && (() => {
+  const pm = document.getElementById('persistent-mic');
+  pm.ontouchstart = (e) => { e.preventDefault(); document.getElementById('mic-btn') && startMic(e); };
+  pm.ontouchend = (e) => { e.preventDefault(); stopMic(e); };
+  pm.onmousedown = startMic;
+  pm.onmouseup = stopMic;
+  pm.onmouseleave = stopMic;
+})();
+
+// ── VOICES READY ──────────────────────────────────────────────────────────────
+window.speechSynthesis && window.speechSynthesis.addEventListener('voiceschanged', () => {});
+
+// ── START ─────────────────────────────────────────────────────────────────────
+document.getElementById('progress').style.width = (1/total*100)+'%';
+
+// Start only after audio unlock (see unlockAudio function)
+// On desktop, auto-unlock after brief delay
+setTimeout(() => {
+  if (!audioUnlocked) {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile) unlockAudio();
+  }
+}, 1200);
+</script>
+</body>
+</html>

@@ -4,3 +4,5 @@ buildseal.key.json
 isc_pack_v5_bin
 buildseal*.key.json
 node_modules/
+.vercel
+.env*.local
