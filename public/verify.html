@@ -36,8 +36,8 @@ function renderLineage(node, depth = 0) {
   const rels = (node.relations || []).map(rel => `
     <div style="margin-left:${pad + 14}px;margin-top:10px;border-left:1px solid #334155;padding-left:12px">
       <div class="label">Relation</div>
-      <div class="value" style="color:#93c5fd">${rel.type} → ${rel.profile || '-'}</div>
-      ${renderLineage(rel.target, depth + 1)}
+      <div class="value" style="color:#93c5fd">${rel.type} → ${rel.target_seal ? `<a href="verify.html?id=${rel.target_seal}" style="color:#4ade80;text-decoration:none">${rel.target_seal}</a>` : (rel.profile || '-')}</div>
+      ${rel.target_seal ? '' : renderLineage(rel.target, depth + 1)}
     </div>
   `).join('');
 

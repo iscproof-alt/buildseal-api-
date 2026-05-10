@@ -139,7 +139,7 @@ app.get("/download/isc_verify", (req, res) => {
 });
 
 app.post("/seal", async (req, res) => {
-  const { artifact_hash, repo, commit, filename } = req.body;
+  const { artifact_hash, repo, commit, filename, relations } = req.body;
   if (!artifact_hash) return res.status(400).json({ error: "artifact_hash required" });
 
   const seal_id = "seal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
@@ -178,6 +178,7 @@ app.post("/seal", async (req, res) => {
       if (root) tsaResult = await requestTSA(root);
     } catch(e) { tsaResult.error = e.message; }
     packData = JSON.parse(fs.readFileSync(packPath, 'utf8'));
+    if (relations && relations.length) { packData.relations = relations; fs.writeFileSync(packPath, JSON.stringify(packData, null, 2)); }
     // DB update skipped local
     // packPath line 268'den sonra siliniyor
   } catch(e) {
@@ -1134,7 +1135,7 @@ app.get('/trace/:id', async (req, res) => {
     lineage: {
       seal_id,
       artifact_hash: pack.content_hash?.digest || null,
-      relations: [],
+      relations: pack.relations || [],
       root_hash: pack.root || null,
       sealed_at: pack.sealed_at || null
     }
