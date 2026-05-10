@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Nym</title>
+<style>
+body{background:#0a0c0b;color:#c8dcc8;font-family:sans-serif;display:flex;flex-direction:column;height:100vh;margin:0}
+#chat{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.u{align-self:flex-end;background:#001f0e;border:1px solid #008c46;padding:10px 16px;border-radius:12px;max-width:70%}
+.n{align-self:flex-start;background:#111411;border:1px solid #1c211c;padding:10px 16px;border-radius:12px;max-width:80%}
+#bottom{padding:16px;border-top:1px solid #1c211c;display:flex;gap:8px}
+#q{flex:1;background:#111411;border:1px solid #252d25;color:#c8dcc8;padding:10px;border-radius:8px;font-size:14px}
+#btn{background:#001f0e;border:1px solid #008c46;color:#00d46a;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px}
+</style>
+</head>
+<body>
+<div id="chat"></div>
+<div id="bottom">
+<input id="q" placeholder="Ask Nym..." />
+<button id="btn">Send</button>
+</div>
+<script>
+var API = "http://localhost:3000";
+document.getElementById("btn").onclick = send;
+document.getElementById("q").onkeydown = function(e){ if(e.key==="Enter") send(); };
+function send(){
+  var inp = document.getElementById("q");
+  var q = inp.value.trim();
+  if(q.length === 0) return;
+  inp.value = "";
+  var u = document.createElement("div");
+  u.className = "u";
+  u.textContent = q;
+  document.getElementById("chat").appendChild(u);
+  var n = document.createElement("div");
+  n.className = "n";
+  n.textContent = "...";
+  document.getElementById("chat").appendChild(n);
+  n.scrollIntoView();
+  fetch(API+"/nym/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({q:q})})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    n.textContent = data.answer;
+  });
+}
+</script>
+</body>
+</html>

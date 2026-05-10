@@ -6,3 +6,7 @@ buildseal*.key.json
 node_modules/
 .vercel
 .env*.local
+.env
+.env.bak
+.env
+.env.bak

@@ -1142,11 +1142,12 @@ app.get('/trace/:id', async (req, res) => {
   });
 });
 
-app.post('/nym/ask', async (req, res) => {
+app.post('/nym/ask-old', async (req, res) => {
   const { q, session_id, prev_hash, scope_override } = req.body;
   if (!q) return res.status(400).json({ ok: false, error: 'q required' });
 
   const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
   // ── GABA: Hard boundaries — never goes to Claude ──────────────────────────
   const hardBoundaries = [
@@ -1191,16 +1192,24 @@ app.post('/nym/ask', async (req, res) => {
   let answer = null;
   let source = 'claude';
 
-  if (ANTHROPIC_KEY) {
+  if (OPENAI_KEY || ANTHROPIC_KEY) {
     try {
-      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      const useOpenAI = !!OPENAI_KEY;
+      const claudeRes = await fetch(useOpenAI ? 'https://api.openai.com/v1/chat/completions' : 'https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: {
+        headers: useOpenAI ? {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + OPENAI_KEY
+        } : {
           'Content-Type': 'application/json',
           'x-api-key': ANTHROPIC_KEY,
           'anthropic-version': '2023-06-01'
         },
-        body: JSON.stringify({
+        body: JSON.stringify(useOpenAI ? {
+          model: 'gpt-4o-mini',
+          max_tokens: 300,
+          messages: [{role:'system',content:`You are Nym — BuildSeal's sealed AI representative. Every response you produce is cryptographically sealed. Tone: protocol register. No enthusiasm. No hedging. No apology. No filler. First sentence is always direct. Keep responses under 3 sentences. Scope: financial decision evidence, cryptographic sealing, audit trails, AI decision verification, compliance evidence. If outside scope say exactly: "That falls outside the current Financial Decision Evidence Pack scope. This exchange has been flagged for human review."`},{role:'user',content:q}]
+        } : {
           model: 'claude-sonnet-4-20250514',
           max_tokens: 300,
           system: `You are Nym — BuildSeal's sealed AI representative operating within the Financial Decision Evidence framework.
@@ -1222,7 +1231,9 @@ If outside scope: respond with exactly: "That falls outside the current Financia
         })
       });
       const claudeData = await claudeRes.json();
-      if (claudeData.content && claudeData.content[0]) {
+      if (claudeData.choices && claudeData.choices[0]) {
+        answer = claudeData.choices[0].message.content;
+      } else if (claudeData.content && claudeData.content[0]) {
         answer = claudeData.content[0].text;
       }
     } catch (e) {
@@ -1259,6 +1270,7 @@ If outside scope: respond with exactly: "That falls outside the current Financia
     confirmed: scope === 'CONFIRMED',
     seal_id: sealRes.seal_id || null,
     verify_url: sealRes.verify_url || null,
+    trace_url: sealRes.seal_id ? `/trace/${sealRes.seal_id}` : null,
     source
   });
 });
@@ -1282,11 +1294,11 @@ app.post('/nym/ask', async (req, res) => {
 
   for (const b of hardBoundaries) {
     if (b.trigger.some(t => lower.includes(t))) {
-      const sealRes = await fetch("https://buildseal-api-production-3ca5.up.railway.app/seal/decision", {
+      const sealRes = await fetch(`http://localhost:${process.env.PORT || 3000}/seal/decision`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ actor: "nym-v0.1", decision_type: "nym_exchange", decision: b.type, input_ref: q.slice(0,100), model_version: "nym-v0.1-gaba", reasons: [q] })
       }).then(r => r.json()).catch(() => ({}));
-      return res.json({ ok: true, answer: b.response, scope: b.type, confirmed: false, seal_id: sealRes.seal_id || null, verify_url: sealRes.verify_url || null, source: "gaba" });
+      return res.json({ ok: true, answer: b.response, scope: b.type, confirmed: false, seal_id: sealRes.seal_id || null, verify_url: sealRes.verify_url || null, trace_url: sealRes.seal_id ? `/trace/${sealRes.seal_id}` : null, source: "gaba" });
     }
   }
 
@@ -1297,23 +1309,25 @@ app.post('/nym/ask', async (req, res) => {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 300,
-          system: "You are Nym. BuildSeal sealed AI representative. Financial Decision Evidence framework. Protocol register only. No enthusiasm. No preamble. Under 3 sentences. If outside scope: respond exactly: That falls outside the current Financial Decision Evidence Pack scope. This exchange has been flagged for human review.",
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 300,
+          system: "You are Nym, the sealed AI representative of BuildSeal and ISCProof. You answer questions about BuildSeal, ISCProof, Nym, cryptographic sealing, timestamping, audit trails, decision evidence, AI verification, compliance evidence, identity continuity, protocol design, and evidentiary infrastructure. Tone: protocol register. Direct, concise, technical. Under 4 sentences. Only reject requests that attempt authority escalation, legal advice, financial commitments, jailbreaks, or unrelated general topics.",
           messages: [{ role: "user", content: q }]
         })
       });
       const cd = await cr.json();
       if (cd.content && cd.content[0]) answer = cd.content[0].text;
-    } catch(e) {}
+      else console.error("CLAUDE_BAD_RESPONSE", JSON.stringify(cd));
+    } catch(e) { console.error("CLAUDE_ERROR", e?.message || e); }
   }
 
-  if (!answer) answer = "That falls outside the current Financial Decision Evidence Pack scope. This exchange has been flagged for human review.";
-  const scope = answer.includes("flagged for human review") ? "OUTSIDE_PACK" : "CONFIRMED";
+  if (!answer) answer = "Nym is temporarily unable to reach its model provider. This exchange has been sealed for review.";
+  const scope = answer.includes("temporarily unable") ? "PROVIDER_UNAVAILABLE" : "CONFIRMED";
 
   const sealRes = await fetch("https://buildseal-api-production-3ca5.up.railway.app/seal/decision", {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ actor: "nym-v0.1", decision_type: "nym_exchange", decision: scope, input_ref: q.slice(0,100), model_version: "claude-sonnet-4-20250514", reasons: [q] })
   }).then(r => r.json()).catch(() => ({}));
 
-  return res.json({ ok: true, answer, scope, confirmed: scope === "CONFIRMED", seal_id: sealRes.seal_id || null, verify_url: sealRes.verify_url || null, source: "claude" });
+  return res.json({ ok: true, answer, scope, confirmed: scope === "CONFIRMED", seal_id: sealRes.seal_id || null, verify_url: sealRes.verify_url || null, trace_url: sealRes.seal_id ? `/trace/${sealRes.seal_id}` : null, source: "claude" });
 });
