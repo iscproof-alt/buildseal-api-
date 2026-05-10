@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BuildSeal — Verify</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #0f1117; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  .container { max-width: 600px; width: 100%; padding: 40px; }
+  h1 { font-size: 2em; margin-bottom: 30px; text-align: center; }
+  .card { background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+  .label { color: #888; font-size: 0.8em; margin-bottom: 4px; }
+  .value { font-family: monospace; word-break: break-all; font-size: 0.95em; }
+  .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+  .queued { background: #854d0e; color: #fef08a; }
+  .verified { background: #14532d; color: #86efac; }
+  .error { background: #7f1d1d; color: #fca5a5; }
+  .badge { text-align: center; font-size: 3em; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔍 Verify</h1>
+  <div class="card" id="main">
+    <div style="text-align:center;color:#888">Yükleniyor...</div>
+  </div>
+</div>
+<script>
+const id = new URLSearchParams(window.location.search).get('id') || window.location.pathname.split('/').pop();
+const API = 'http://localhost:3000';
+
+function renderLineage(node, depth = 0) {
+  if (!node) return '';
+  const pad = depth * 14;
+  const isOrigin = !node.relations || node.relations.length === 0;
+  const rels = (node.relations || []).map(rel => `
+    <div style="margin-left:${pad + 14}px;margin-top:10px;border-left:1px solid #334155;padding-left:12px">
+      <div class="label">Relation</div>
+      <div class="value" style="color:#93c5fd">${rel.type} → ${rel.profile || '-'}</div>
+      ${renderLineage(rel.target, depth + 1)}
+    </div>
+  `).join('');
+
+  return `
+    <div style="margin-left:${pad}px;margin-top:10px">
+      <div class="label">Seal</div>
+      <div class="value">
+  <a href="verify.html?id=${node.seal_id}" style="color:#4ade80;text-decoration:none">
+    ${node.seal_id}
+  </a>
+</div>
+      <div class="label">Artifact Hash</div>
+      <div class="value">${node.artifact_hash || '-'}</div>
+      ${isOrigin ? `
+        <div style="margin-top:10px;color:#fbbf24;font-size:0.85em;font-family:monospace">
+          ◎ Provenance root · origin event
+        </div>
+      ` : ''}
+      ${rels}
+    </div>
+  `;
+}
+
+Promise.all([
+  fetch(API + '/seal/' + id).then(r => r.json()),
+  fetch(API + '/trace/' + id).then(r => r.json()).catch(() => null)
+])
+  .then(([d, trace]) => {
+    if (d.error) throw new Error(d.error);
+
+    const status = d.status || 'queued';
+    const badge = status === 'verified' ? '✅' : '⏳';
+    const hasLineage = trace && trace.lineage && !trace.error;
+
+    document.getElementById('main').innerHTML = `
+      <div class="badge">${badge}</div>
+
+      <div class="label">Seal ID</div>
+      <div class="value" style="color:#4ade80;font-size:1.1em;margin-bottom:16px">${d.seal_id}</div>
+
+      <div class="label">Status</div>
+      <div style="margin-bottom:16px"><span class="status ${status}">${status.toUpperCase()}</span></div>
+
+      <div class="label">Artifact Hash</div>
+      <div class="value" style="margin-bottom:16px">${d.artifact_hash}</div>
+
+      <div class="label">Repo</div>
+      <div class="value" style="margin-bottom:16px">${d.repo || '-'}</div>
+
+      <div class="label">Commit</div>
+      <div class="value" style="margin-bottom:16px">${d.commit_hash || d.commit || '-'}</div>
+
+      <div class="label">Created At</div>
+      <div class="value">${d.created_at}</div>
+
+      <div class="label" style="margin-top:16px">Verification</div>
+      <div class="value" style="color:#4ade80;font-size:1.15em;font-weight:bold">
+        &#10003; Event record found<br>
+        &#10003; Relations field parsed<br>
+        ${hasLineage ? '&#10003; Lineage resolved' : '• No lineage available'}
+      </div>
+
+      ${hasLineage ? `
+        <div class="card" style="margin-top:20px;background:#111827">
+          <div class="label">Evidence Lineage</div>
+          <div style="font-size:1.1em;font-weight:bold;margin-bottom:8px">Verify the lineage of this event</div>
+          ${renderLineage(trace.lineage)}
+        </div>
+      ` : ''}
+    `;
+  })
+  .catch(() => {
+    document.getElementById('main').innerHTML = '<div style="color:#f87171;text-align:center">Seal bulunamadı.</div>';
+  });
+</script>
+</body>
+</html>
