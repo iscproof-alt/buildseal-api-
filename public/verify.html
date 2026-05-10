@@ -1,304 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BuildSeal — Verify</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:#080c10;--bg2:#0d1117;--bg3:#111820;--border:#1e2d3d;--border2:#243040;
-    --green:#00e676;--green-dim:rgba(0,230,118,0.08);--green-dim2:rgba(0,230,118,0.15);
-    --red:#ff5252;--yellow:#ffd740;
-    --text:#e8f0fe;--text2:#8899aa;--text3:#556677;
-    --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
-  }
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
-  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,230,118,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,118,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-  nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,12,16,0.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
-  .nav-logo{font-family:var(--mono);font-size:1em;color:var(--green);text-decoration:none}
-  .nav-logo span{color:var(--text2)}
-  .nav-right{display:flex;align-items:center;gap:20px}
-  .nav-link{color:var(--text3);text-decoration:none;font-size:0.85em;transition:color 0.2s}
-  .nav-link:hover{color:var(--text2)}
-  .nav-badge{font-family:var(--mono);font-size:0.68em;color:var(--green);border:1px solid rgba(0,230,118,0.3);padding:3px 9px;border-radius:20px}
-  main{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 24px 60px}
-  .loading{display:flex;flex-direction:column;align-items:center;gap:16px}
-  .spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .loading-text{font-family:var(--mono);font-size:0.78em;color:var(--text3);letter-spacing:1px}
-  .card{width:100%;max-width:640px;opacity:0;animation:fadeUp 0.5s ease forwards}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-  .verdict-header{background:var(--bg2);border:1px solid var(--border);border-radius:14px 14px 0 0;padding:36px 32px 28px;text-align:center;position:relative;overflow:hidden}
-  .verdict-header::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity 0.4s}
-  .verdict-header.valid::before{background:radial-gradient(ellipse at 50% 0%,rgba(0,230,118,0.09) 0%,transparent 70%);opacity:1}
-  .verdict-header.invalid::before{background:radial-gradient(ellipse at 50% 0%,rgba(255,82,82,0.09) 0%,transparent 70%);opacity:1}
-  .verdict-icon{font-size:2.6em;margin-bottom:10px;display:block}
-  .verdict-label{font-family:var(--mono);font-size:1.3em;font-weight:700;letter-spacing:3px;margin-bottom:5px}
-  .verdict-label.valid{color:var(--green)}
-  .verdict-label.invalid{color:var(--red)}
-  .verdict-label.pending{color:var(--yellow)}
-  .verdict-sub{color:var(--text2);font-size:0.88em;font-weight:300;margin-bottom:12px}
-  .seal-id-chip{display:inline-block;font-family:var(--mono);font-size:0.68em;color:var(--text3);background:var(--bg3);border:1px solid var(--border2);padding:4px 12px;border-radius:20px;word-break:break-all}
-  .seal-info{background:var(--bg2);border:1px solid var(--border);border-top:none;padding:0 32px}
-  .info-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);gap:16px}
-  .info-row:last-child{border-bottom:none}
-  .info-label{font-family:var(--mono);font-size:0.63em;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0}
-  .info-value{font-family:var(--mono);font-size:0.78em;color:var(--text);text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
-  .info-value.green{color:var(--green)}
-  .info-value.muted{color:var(--text2)}
-  .hash-display{word-break:break-all}
-  .copy-btn{flex-shrink:0;background:var(--bg3);border:1px solid var(--border2);color:var(--text3);border-radius:4px;padding:3px 8px;font-size:0.65em;cursor:pointer;font-family:var(--mono);transition:all 0.2s;white-space:nowrap}
-  .copy-btn:hover{color:var(--green);border-color:rgba(0,230,118,0.3);background:var(--green-dim)}
-  .steps-section{background:var(--bg2);border:1px solid var(--border);border-top:none;padding:20px 32px}
-  .steps-label{font-family:var(--mono);font-size:0.63em;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
-  .steps-grid{display:flex;flex-direction:column;gap:8px}
-  .step{display:flex;align-items:center;gap:12px;font-size:0.84em;padding:6px 10px;border-radius:6px;background:var(--bg3);border:1px solid var(--border)}
-  .step-tick{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75em;flex-shrink:0;font-weight:700}
-  .step.ok .step-tick{background:rgba(0,230,118,0.15);color:var(--green);border:1px solid rgba(0,230,118,0.3)}
-  .step.fail .step-tick{background:rgba(255,82,82,0.15);color:var(--red);border:1px solid rgba(255,82,82,0.3)}
-  .step.warn .step-tick{background:rgba(255,215,64,0.1);color:var(--yellow);border:1px solid rgba(255,215,64,0.25)}
-  .step.ok{color:var(--text)}
-  .step.fail{color:var(--red)}
-  .step.warn{color:var(--text2)}
-  .step-detail{margin-left:auto;font-family:var(--mono);font-size:0.72em;color:var(--text3)}
-  .actions-section{background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 14px 14px;padding:20px 32px;display:flex;gap:10px;flex-wrap:wrap}
-  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:6px;font-family:var(--sans);font-size:0.85em;font-weight:600;cursor:pointer;text-decoration:none;border:none;transition:all 0.2s}
-  .btn-primary{background:var(--green-dim2);color:var(--green);border:1px solid rgba(0,230,118,0.25)}
-  .btn-primary:hover{background:rgba(0,230,118,0.25)}
-  .btn-secondary{background:var(--bg3);color:var(--text2);border:1px solid var(--border2)}
-  .btn-secondary:hover{color:var(--text);border-color:var(--text3)}
-  .not-found{text-align:center;padding:60px 24px}
-  .not-found-icon{font-size:3em;margin-bottom:16px}
-  .not-found h2{font-family:var(--mono);font-size:1.1em;color:var(--red);margin-bottom:8px;letter-spacing:1px}
-  .not-found p{color:var(--text3);font-size:0.9em;font-weight:300}
-  @media(max-width:600px){nav{padding:14px 20px}.verdict-header,.seal-info,.steps-section,.actions-section{padding-left:20px;padding-right:20px}}
+  body { font-family: Arial, sans-serif; background: #0f1117; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  .container { max-width: 600px; width: 100%; padding: 40px; }
+  h1 { font-size: 2em; margin-bottom: 30px; text-align: center; }
+  .card { background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+  .label { color: #888; font-size: 0.8em; margin-bottom: 4px; }
+  .value { font-family: monospace; word-break: break-all; font-size: 0.95em; }
+  .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+  .queued { background: #854d0e; color: #fef08a; }
+  .verified { background: #14532d; color: #86efac; }
+  .error { background: #7f1d1d; color: #fca5a5; }
+  .badge { text-align: center; font-size: 3em; margin-bottom: 10px; }
 </style>
 </head>
 <body>
-<nav>
-  <a class="nav-logo" href="https://buildseal.io">Build<span>Seal</span></a>
-  <div class="nav-right">
-    <a class="nav-link" href="https://buildseal.io">Seal a document</a>
-    <span class="nav-badge">ISCProof v5</span>
+<div class="container">
+  <h1>🔍 Verify</h1>
+  <div class="card" id="main">
+    <div style="text-align:center;color:#888">Yükleniyor...</div>
   </div>
-</nav>
-<main id="main">
-  <div class="loading"><div class="spinner"></div><div class="loading-text">VERIFYING SEAL...</div></div>
-</main>
+</div>
 <script>
-const API='https://buildseal-api-production-3ca5.up.railway.app';
+const id = new URLSearchParams(window.location.search).get('id') || window.location.pathname.split('/').pop();
+const API = 'http://localhost:3000';
 
-function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function renderLineage(node, depth = 0) {
+  if (!node) return '';
+  const pad = depth * 14;
+  const isOrigin = !node.relations || node.relations.length === 0;
+  const rels = (node.relations || []).map(rel => `
+    <div style="margin-left:${pad + 14}px;margin-top:10px;border-left:1px solid #334155;padding-left:12px">
+      <div class="label">Relation</div>
+      <div class="value" style="color:#93c5fd">${rel.type} → ${rel.profile || '-'}</div>
+      ${renderLineage(rel.target, depth + 1)}
+    </div>
+  `).join('');
 
-function humanTime(iso){
-  if(!iso)return null;
-  try{return new Date(iso).toLocaleString('en-GB',{timeZone:'UTC',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+' UTC';}catch(e){return iso;}
+  return `
+    <div style="margin-left:${pad}px;margin-top:10px">
+      <div class="label">Seal</div>
+      <div class="value">
+  <a href="verify.html?id=${node.seal_id}" style="color:#4ade80;text-decoration:none">
+    ${node.seal_id}
+  </a>
+</div>
+      <div class="label">Artifact Hash</div>
+      <div class="value">${node.artifact_hash || '-'}</div>
+      ${isOrigin ? `
+        <div style="margin-top:10px;color:#fbbf24;font-size:0.85em;font-family:monospace">
+          ◎ Provenance root · origin event
+        </div>
+      ` : ''}
+      ${rels}
+    </div>
+  `;
 }
 
-function shortHash(h,n=8){
-  if(!h)return'';
-  if(h.length<=n*2+1)return'<span class="hash-display">'+esc(h)+'</span>';
-  return'<span class="hash-display">'+esc(h.slice(0,n))+'&hellip;'+esc(h.slice(-n))+'</span>';
-}
+Promise.all([
+  fetch(API + '/seal/' + id).then(r => r.json()),
+  fetch(API + '/trace/' + id).then(r => r.json()).catch(() => null)
+])
+  .then(([d, trace]) => {
+    if (d.error) throw new Error(d.error);
 
-function copyText(text,btn){
-  navigator.clipboard.writeText(text).then(()=>{
-    const orig=btn.textContent;btn.textContent='✓ copied';btn.style.color='var(--green)';
-    setTimeout(()=>{btn.textContent=orig;btn.style.color='';},1500);
+    const status = d.status || 'queued';
+    const badge = status === 'verified' ? '✅' : '⏳';
+    const hasLineage = trace && trace.lineage && !trace.error;
+
+    document.getElementById('main').innerHTML = `
+      <div class="badge">${badge}</div>
+
+      <div class="label">Seal ID</div>
+      <div class="value" style="color:#4ade80;font-size:1.1em;margin-bottom:16px">${d.seal_id}</div>
+
+      <div class="label">Status</div>
+      <div style="margin-bottom:16px"><span class="status ${status}">${status.toUpperCase()}</span></div>
+
+      <div class="label">Artifact Hash</div>
+      <div class="value" style="margin-bottom:16px">${d.artifact_hash}</div>
+
+      <div class="label">Repo</div>
+      <div class="value" style="margin-bottom:16px">${d.repo || '-'}</div>
+
+      <div class="label">Commit</div>
+      <div class="value" style="margin-bottom:16px">${d.commit_hash || d.commit || '-'}</div>
+
+      <div class="label">Created At</div>
+      <div class="value">${d.created_at}</div>
+
+      <div class="label" style="margin-top:16px">Verification</div>
+      <div class="value" style="color:#4ade80;font-size:1.15em;font-weight:bold">
+        &#10003; Event record found<br>
+        &#10003; Relations field parsed<br>
+        ${hasLineage ? '&#10003; Lineage resolved' : '• No lineage available'}
+      </div>
+
+      ${hasLineage ? `
+        <div class="card" style="margin-top:20px;background:#111827">
+          <div class="label">Evidence Lineage</div>
+          <div style="font-size:1.1em;font-weight:bold;margin-bottom:8px">Verify the lineage of this event</div>
+          ${renderLineage(trace.lineage)}
+        </div>
+      ` : ''}
+    `;
+  })
+  .catch(() => {
+    document.getElementById('main').innerHTML = '<div style="color:#f87171;text-align:center">Seal bulunamadı.</div>';
   });
-}
-
-function step(cls,label,detail){
-  const tick=cls==='ok'?'✓':cls==='fail'?'✗':'!';
-  return'<div class="step '+cls+'"><div class="step-tick">'+tick+'</div>'+esc(label)+(detail?'<span class="step-detail">'+esc(detail)+'</span>':'')+'</div>';
-}
-
-const id=new URLSearchParams(window.location.search).get('id')||window.location.pathname.split('/').filter(Boolean).pop();
-
-if(!id||id==='release'||id==='verify.html'){
-  document.getElementById('main').innerHTML='<div class="not-found"><div class="not-found-icon">🔍</div><h2>NO SEAL ID</h2><p>No seal ID provided in the URL.</p></div>';
-}else{
-  fetch(API+'/verify/'+encodeURIComponent(id))
-    .then(r=>{if(!r.ok)throw new Error('not_found');return r.json();})
-    .then(d=>{
-      const verdict=d.verdict||'PENDING';
-      const isValid=verdict==='VALID',isInvalid=verdict==='INVALID';
-      const verdictClass=isValid?'valid':isInvalid?'invalid':'pending';
-      const verdictIcon=isValid?'✅':isInvalid?'❌':'⏳';
-      const verdictLabel=isValid?'VERIFIED':isInvalid?'INVALID':'PENDING';
-      const verdictSub=isValid?'Cryptographic verification passed':isInvalid?'Verification failed':'Processing';
-
-      const tsa=d.tsa||null;
-      const tsaPresent=!!(tsa&&tsa.present===true);
-      const tsaTime=tsaPresent&&tsa.time?humanTime(tsa.time):null;
-      const tsaProvider=esc((tsa&&tsa.provider?tsa.provider+'.org':'')||'freetsa.org');
-
-      const vd=d.verify_detail||{};
-      const rootMatch=vd.root_match===true;
-      const sigValid=vd.sig_valid===true;
-      const tsaVerified=vd.tsa_verified===true;
-      const packVerNum=Number((vd&&vd.pack_version)||5)||5;
-
-      const sealedAt=d.created_at?humanTime(d.created_at):'—';
-      const root=(vd&&vd.root)||d.root||d.pack_hash||null;
-      const artifactHash=d.artifact_hash||null;
-      const fingerprint=(vd.fields&&vd.fields.fingerprint)||null;
-      const evidenceUrl='https://verify.buildseal.io/pack/'+esc(d.seal_id||id);
-
-      const tsaRow=tsaPresent&&tsaTime
-        ?'✅ '+esc(tsaTime)+' &middot; '+tsaProvider
-        :'⚠️ No trusted timestamp — document integrity intact, time not anchored';
-
-      let html='<div class="card">';
-
-      // Verdict header
-      html+='<div class="verdict-header '+verdictClass+'">';
-      html+='<span class="verdict-icon">'+verdictIcon+'</span>';
-      html+='<div class="verdict-label '+verdictClass+'">'+verdictLabel+'</div>';
-      html+='<div class="verdict-sub">'+verdictSub+'</div>';
-      html+='<div class="seal-id-chip">'+esc(d.seal_id||id)+'</div>';
-      html+='</div>';
-
-      // Info rows
-      html+='<div class="seal-info">';
-      html+='<div class="info-row"><div class="info-label">Sealed At</div><div class="info-value muted">'+sealedAt+'</div></div>';
-      html+='<div class="info-row"><div class="info-label">Time Proof</div><div class="info-value">'+tsaRow+'</div></div>';
-      html+='<div class="info-row"><div class="info-label">Cryptographic Layer</div><div class="info-value muted"><a href="https://iscproof.dev/spec/v5" target="_blank" style="color:var(--text2);text-decoration:none">ISCProof v'+packVerNum+' ↗</a></div></div>';
-      if(root)html+='<div class="info-row"><div class="info-label">Root Hash</div><div class="info-value">'+shortHash(root)+'<button class="copy-btn" onclick="copyText(\''+root.replace(/'/g,"\\'")+'\'  ,this)">copy</button></div></div>';
-      if(artifactHash)html+='<div class="info-row"><div class="info-label">File Hash (SHA-256)</div><div class="info-value">'+shortHash(artifactHash)+'<button class="copy-btn" onclick="copyText(\''+artifactHash.replace(/'/g,"\\'")+'\'  ,this)">copy</button></div></div>';
-      if(fingerprint)html+='<div class="info-row"><div class="info-label">Signing Key</div><div class="info-value muted"><a href="https://buildseal.io/keys/'+esc(fingerprint)+'" target="_blank" style="color:var(--text2);text-decoration:none">'+esc(fingerprint)+' ↗</a></div></div>';
-      html+='</div>';
-
-      // Verification checks
-      html+='<div class="steps-section"><div class="steps-label">Verification checks</div><div class="steps-grid">';
-      html+=step('ok','JSON parse','valid');
-      html+=step(packVerNum>=5?'ok':'warn','Pack version','v'+packVerNum);
-      html+=step(rootMatch?'ok':'fail','Root hash match',rootMatch?'passed':'MISMATCH');
-      html+=step(sigValid?'ok':'fail','ed25519 signature verified',sigValid?'valid':'INVALID');
-      html+=step(tsaVerified?'ok':'warn','RFC 3161 timestamp',tsaVerified?'cryptographically verified':tsaPresent?'present':'not found');
-      html+='</div></div>';
-
-      // Actions
-      // Decision summary section
-      if(d.decision_summary) {
-        const ds = d.decision_summary;
-        // Support both nested (v1.1) and flat (inaction/commit) payload structures
-        const dec = ds.decision || {};
-        const risk = ds.risk || {};
-        const agent = ds.agent || {};
-        const subject = ds.subject || {};
-        // Flat structure fallback
-        const decType = dec.type || ds.decision_type || ds.decision || '-';
-        const decReasonCode = dec.reason_code || ds.reason_code || '-';
-        const subjectType = subject.type || ds.subject_type || '-';
-        const subjectRef = subject.ref || ds.subject_ref || '-';
-        const riskScore = (risk.score !== undefined && risk.score !== null) ? risk.score : (ds.risk_score !== undefined && ds.risk_score !== null ? ds.risk_score : '-');
-        const riskFlags = (risk.flags || ds.flags || []).join(', ') || 'none';
-        const rulesTriggered = (risk.rules_triggered || ds.rules_triggered || []).join(', ') || 'none';
-        const agentId = (agent.id || ds.model || '-') + ' ' + (agent.version || '');
-        const policyVersion = agent.policy_version || ds.policy_version || '-';
-        html+='<div style="background:var(--bg2);border:1px solid var(--border);border-top:none;padding:20px 32px">';
-        html+='<div style="font-family:var(--mono);font-size:0.63em;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px">Decision Context</div>';
-        html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">';
-        const dsFields = [
-          ['Decision', decType],
-          ['Reason Code', decReasonCode],
-          ['Subject', subjectType + ' / ' + subjectRef],
-          ['Risk Score', riskScore],
-          ['Flags', riskFlags],
-          ['Rules Triggered', rulesTriggered],
-          ['Agent', agentId],
-          ['Policy Version', policyVersion],
-          ['Input Hash', ds.input_hash || '-'],
-          ['Prompt Version', ds.prompt_version || '-'],
-          ['Tool Trace Hash', ds.tool_trace_hash || '-'],
-          ['Build Commit', ds.execution_context && ds.execution_context.build_commit ? ds.execution_context.build_commit.slice(0,12) : '-'],
-          ['Schema Version', ds.schema_version || '-'],
-          ['Canonicalization', ds.canonicalization || '-'],
-        ];
-        dsFields.forEach(([label, val]) => {
-          html+='<div>';
-          html+='<div style="font-family:var(--mono);font-size:0.63em;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">'+esc(label)+'</div>';
-          html+='<div style="font-family:var(--mono);font-size:0.78em;color:var(--text2)">'+esc(String(val))+'</div>';
-          html+='</div>';
-        });
-        html+='</div>';
-        if(d.evidence_url) {
-          html+='<div style="margin-top:14px"><a href="'+esc(d.evidence_url)+'" target="_blank" style="font-family:var(--mono);font-size:0.72em;color:var(--green);text-decoration:none">View Communication Evidence ↗</a></div>';
-        }
-        html+='</div>';
-      }
-      // Event Chain
-      const events = [];
-      // EVALUATED
-      if(d.decision_summary && d.decision_summary.event_time) {
-        events.push({type:'EVALUATED', time:d.decision_summary.event_time, label:'Agent produced decision payload', proof:d.decision_summary.evaluate_hash ? 'payload hash: '+esc(d.decision_summary.evaluate_hash.slice(0,16)) : '', evidenced:true});
-      }
-      // COMMITTED or ABANDONED
-      if(d.decision_summary) {
-        if(d.decision_summary.inaction===true) {
-          events.push({type:'ABANDONED', time:d.sealed_at||'', label:'No action taken', proof:d.decision_summary.abandon_reason||'No commit issued', evidenced:true});
-        } else if(d.decision_summary.inaction===false || d.decision_summary.decision) {
-          events.push({type:'COMMITTED', time:d.sealed_at||'', label:'Decision bound into seal', proof:'seal_id: '+esc(d.seal_id||''), evidenced:true});
-        }
-      }
-      // SEALED
-      if(d.sealed_at) {
-        events.push({type:'SEALED', time:d.sealed_at, label:'Cryptographically sealed', proof:'ISCProof v'+(d.verify_detail&&d.verify_detail.pack_version||'5'), evidenced:true});
-      }
-      // TIMESTAMPED
-      if(d.tsa && d.tsa.present && d.tsa.time) {
-        events.push({type:'TIMESTAMPED', time:d.tsa.time, label:'RFC 3161 timestamp', proof:'freetsa.org', evidenced:true});
-      }
-      // VERIFIED shown separately, not in chain
-
-      if(events.length > 0) {
-        html+='<div style="background:var(--bg2);border:1px solid var(--border);border-top:none;padding:20px 32px">';
-        html+='<div style="font-family:var(--mono);font-size:0.63em;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px">Event Chain</div>';
-        html+='<div style="display:flex;flex-direction:column;gap:0">';
-        const typeColors = {EVALUATED:'#40c4ff',COMMITTED:'#00e676',ABANDONED:'#ff5252',SEALED:'#00e676',TIMESTAMPED:'#ffd740',WITNESSED:'#b388ff',VERIFIED:'#00e676',UNVERIFIED:'#ff5252'};
-        const filteredEvents = events.filter(ev => ev.time && ev.time !== 'null' && ev.time !== '');
-        filteredEvents.forEach((ev, i) => {
-          const color = typeColors[ev.type] || '#8899aa';
-          const opacity = ev.evidenced ? '1' : '0.5';
-          html+='<div style="display:flex;gap:16px;align-items:flex-start;opacity:'+opacity+'">';
-          html+='<div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">';
-          html+='<div style="width:10px;height:10px;border-radius:50%;background:'+color+';margin-top:4px;flex-shrink:0'+(ev.evidenced?';box-shadow:0 0 6px '+color:'')+'""></div>';
-          if(i < filteredEvents.length-1) html+='<div style="width:1px;flex:1;min-height:24px;background:var(--border2);margin:4px 0"></div>';
-          html+='</div>';
-          html+='<div style="padding-bottom:16px">';
-          html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">';
-          html+='<span style="font-family:var(--mono);font-size:0.72em;color:'+color+';font-weight:700">'+esc(ev.type)+'</span>';
-          if(!ev.evidenced) html+='<span style="font-family:var(--mono);font-size:0.6em;color:var(--text3);border:1px solid var(--border2);padding:1px 5px;border-radius:3px">derived</span>';
-          html+='</div>';
-          html+='<div style="font-family:var(--sans);font-size:0.8em;color:var(--text2);margin-bottom:2px">'+esc(ev.label)+'</div>';
-          html+='<div style="font-family:var(--mono);font-size:0.68em;color:var(--text3)">'+humanTime(ev.time)+'</div>';
-          html+='<div style="font-family:var(--mono);font-size:0.65em;color:var(--text3);margin-top:2px">'+esc(ev.proof)+'</div>';
-          html+='</div></div>';
-        });
-        html+='</div></div>';
-      }
-
-      html+='<div class="actions-section">';
-      html+='<a class="btn btn-primary" href="'+evidenceUrl+'" target="_blank">&#11015; Pack JSON</a>';
-      html+='<a class="btn btn-secondary" href="https://buildseal.io">&#128274; Seal a document</a>';
-      html+='<a class="btn btn-secondary" href="https://buildseal-api-production-3ca5.up.railway.app/evidence/'+esc(d.seal_id||id)+'" target="_blank">&#128196; Communication Evidence</a>';
-      html+='<button class="btn btn-secondary" onclick="copyText(window.location.href,this)">&#128279; Copy link</button>';
-      html+='</div></div>';
-
-      document.getElementById('main').innerHTML=html;
-    })
-    .catch((err)=>{ console.error('fetch error:', err);
-      document.getElementById('main').innerHTML='<div class="not-found"><div class="not-found-icon">🔍</div><h2>SEAL NOT FOUND</h2><p>No record found for <code style="color:var(--text2);font-family:var(--mono)">'+esc(id)+'</code></p></div>';
-    });
-}
-window.onerror=function(msg,src,line,col,err){
-  document.getElementById('main').innerHTML='<div class="not-found"><div class="not-found-icon">⚠️</div><h2>JS ERROR</h2><p>'+msg+' (line '+line+')</p></div>';
-  return true;
-};
 </script>
 </body>
 </html>
