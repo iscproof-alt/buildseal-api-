@@ -37,6 +37,9 @@ function renderLineage(node, depth = 0) {
     <div style="margin-left:${pad + 14}px;margin-top:10px;border-left:1px solid #334155;padding-left:12px">
       <div class="label">Relation</div>
       <div class="value" style="color:#93c5fd">${rel.type} → ${rel.target_seal ? `<a href="verify.html?id=${rel.target_seal}" style="color:#4ade80;text-decoration:none">${rel.target_seal}</a>` : (rel.profile || '-')}</div>
+      ${rel.reviewer ? `<div class="label" style="margin-top:4px">reviewer</div><div class="value" style="color:#e2e8f0">${rel.reviewer.role || '-'} · ${rel.reviewer.id || '-'}${rel.reviewer.key_fingerprint ? ` · key:${rel.reviewer.key_fingerprint}` : ''}</div>` : ''}
+      ${rel.note ? `<div class="label" style="margin-top:4px">note</div><div class="value" style="color:#94a3b8">${rel.note}</div>` : ''}
+      ${rel.value ? `<div class="label" style="margin-top:4px">value</div><div class="value" style="color:#fbbf24">${rel.value}</div>` : ''}
       ${rel.target_seal ? '' : renderLineage(rel.target, depth + 1)}
     </div>
   `).join('');
