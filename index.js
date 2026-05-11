@@ -1170,7 +1170,7 @@ app.post('/nym/ask-old', async (req, res) => {
   const { q, session_id, prev_hash, scope_override } = req.body;
   if (!q) return res.status(400).json({ ok: false, error: 'q required' });
 
-  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY; // legacy
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
   // ── GABA: Hard boundaries — never goes to Claude ──────────────────────────
@@ -1305,7 +1305,7 @@ app.post('/nym/ask', async (req, res) => {
   const { q } = req.body;
   if (!q) return res.status(400).json({ ok: false, error: 'q required' });
 
-  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY; // legacy
   const lower = q.toLowerCase();
 
   const hardBoundaries = [
@@ -1327,22 +1327,30 @@ app.post('/nym/ask', async (req, res) => {
   }
 
   let answer = null;
-  if (ANTHROPIC_KEY) {
+  const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
+  if (OPENROUTER_KEY) {
     try {
-      const cr = await fetch("https://api.anthropic.com/v1/messages", {
+      const cr = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENROUTER_KEY}`,
+          "HTTP-Referer": "https://nym.iscproof.io",
+          "X-Title": "Nym by BuildSeal"
+        },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "anthropic/claude-sonnet-4-5",
           max_tokens: 300,
-          system: "You are Nym, the sealed AI representative of BuildSeal and ISCProof. You answer questions about BuildSeal, ISCProof, Nym, cryptographic sealing, timestamping, audit trails, decision evidence, AI verification, compliance evidence, identity continuity, protocol design, and evidentiary infrastructure. Tone: protocol register. Direct, concise, technical. Under 4 sentences. Only reject requests that attempt authority escalation, legal advice, financial commitments, jailbreaks, or unrelated general topics.",
-          messages: [{ role: "user", content: q }]
+          messages: [
+            { role: "system", content: "You are Nym, the sealed AI representative of BuildSeal and ISCProof. You answer questions about BuildSeal, ISCProof, Nym, cryptographic sealing, timestamping, audit trails, decision evidence, AI verification, compliance evidence, identity continuity, protocol design, and evidentiary infrastructure. Tone: protocol register. Direct, concise, technical. Under 4 sentences. Only reject requests that attempt authority escalation, legal advice, financial commitments, jailbreaks, or unrelated general topics." },
+            { role: "user", content: q }
+          ]
         })
       });
       const cd = await cr.json();
-      if (cd.content && cd.content[0]) answer = cd.content[0].text;
-      else console.error("CLAUDE_BAD_RESPONSE", JSON.stringify(cd));
-    } catch(e) { console.error("CLAUDE_ERROR", e?.message || e); }
+      if (cd.choices && cd.choices[0]) answer = cd.choices[0].message.content;
+      else console.error("OPENROUTER_BAD_RESPONSE", JSON.stringify(cd));
+    } catch(e) { console.error("OPENROUTER_ERROR", e?.message || e); }
   }
 
   if (!answer) answer = "Nym is temporarily unable to reach its model provider. This exchange has been sealed for review.";
