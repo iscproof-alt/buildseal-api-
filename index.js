@@ -1073,17 +1073,28 @@ app.post('/seal/decision', async (req, res) => {
     // Do not call requestTSA here; preserve the RFC3161 token written by the engine.
     tsaResult = packData.tsa || null;
 
+
+    // verify_output_json — integrity check icin gerekli
+    let verifyOutputJson = null;
+    try {
+      const packFile2 = `/tmp/${seal_id}_v5_pack.json`;
+      require('fs').writeFileSync(packFile2, JSON.stringify(packData, null, 2));
+      const verifyOut2 = require('child_process').execSync(`${binPath} --verify ${packFile2}`, { encoding: 'utf8', timeout: 15000 });
+      verifyOutputJson = JSON.stringify({ verdict: 'VALID', output: verifyOut2 });
+      try { require('fs').unlinkSync(packFile2); } catch(_) {}
+    } catch(ve) { verifyOutputJson = JSON.stringify({ verdict: 'INVALID', output: ve.message }); }
     try { require('fs').unlinkSync(packFile); } catch(_) {}
 
     try {
       await pool.query(
-        "UPDATE seals SET status='DONE', verdict='VALID', root_hash=$1, payload_json=$2, tsa_json=$3, pack_json=$4 WHERE seal_id=$5",
+        "UPDATE seals SET status='DONE', verdict='VALID', root_hash=$1, payload_json=$2, tsa_json=$3, pack_json=$4, verify_output_json=$6 WHERE seal_id=$5",
         [
           packData.root || null,
           JSON.stringify(evidence),
           JSON.stringify(packData.tsa || { present: false }),
           JSON.stringify(packData),
-          seal_id
+          seal_id,
+          verifyOutputJson
         ]
       );
     } catch(dbErr) { console.warn("DB update skipped:", dbErr.message); }
