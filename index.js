@@ -524,7 +524,9 @@ app.get('/verify/:id', async (req, res) => {
     }
   } catch(e) {}
   const tsa_obj = tsa_json ? JSON.parse(tsa_json) : { present: false };
-  const vdetail = parseVerifyOutput(verify_output_json) || {};
+  let _vraw = verify_output_json;
+  try { const _vobj = JSON.parse(verify_output_json); if (_vobj.output) _vraw = _vobj.output; } catch(_) {}
+  const vdetail = parseVerifyOutput(_vraw) || {};
   if (
     typeof vdetail.fields?.tsa === 'string' &&
     vdetail.fields.tsa.includes('IMPRINT MISMATCH')
