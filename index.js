@@ -121,7 +121,7 @@ app.use(cors());
 app.use(express.json());
 app.use(require('express').static(require('path').join(__dirname, 'public')));
 
-app.get("/health", (req, res) => res.json({ status: "ok", db: true, api_version: "1.0.0", engine: "isc_pack_v5", pack_version: "5.1",
+app.get("/health", (req, res) => res.json({ status: "ok", db: true, api_version: "1.0.1", engine: "isc_pack_v5", pack_version: "5.1", build_commit: BUILD_COMMIT,
     relations_enabled: true }));
 
 app.get("/version", (req, res) => res.json({
