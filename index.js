@@ -533,7 +533,18 @@ app.get('/verify/:id', async (req, res) => {
   ) {
     vdetail.tsa_verified = false;
   }
-  res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_obj, verify_detail: vdetail, decision_summary, verify_url: 'https://buildseal.io/release/' + r.seal_id, evidence_url: 'https://buildseal.io/evidence/' + r.seal_id });
+  const normalizedVerifyDetail = {
+    ...(vdetail || {}),
+    root_match:
+      (r.verdict === 'VALID') &&
+      (!tsa_obj?.message_imprint || tsa_obj.message_imprint === r.root_hash),
+    sig_valid: r.verdict === 'VALID',
+    tsa_valid:
+      !!tsa_obj?.present &&
+      (!tsa_obj?.message_imprint || tsa_obj.message_imprint === r.root_hash)
+  };
+
+  res.json({ ...rest, verdict: r.verdict || 'PENDING', tsa: tsa_obj, verify_detail: normalizedVerifyDetail, decision_summary, verify_url: 'https://buildseal.io/release/' + r.seal_id, evidence_url: 'https://buildseal.io/evidence/' + r.seal_id });
 });
 
 function parseVerifyOutput(raw) {
