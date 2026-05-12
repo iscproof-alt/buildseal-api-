@@ -1374,5 +1374,17 @@ You are not a chatbot. You are a protocol witness. Every response becomes eviden
     body: JSON.stringify({ actor: "nym-v0.1", decision_type: "nym_exchange", decision: scope, input_ref: q.slice(0,100), model_version: "claude-sonnet-4-20250514", reasons: [q] })
   }).then(r => r.json()).catch(() => ({}));
 
-  return res.json({ ok: true, answer, scope, confirmed: scope === "CONFIRMED", seal_id: sealRes.seal_id || null, verify_url: sealRes.verify_url || null, trace_url: sealRes.seal_id ? `/trace/${sealRes.seal_id}` : null, source: "claude" });
+  const confidence = scope === "CONFIRMED" ? 0.85 : 0.45;
+  const threatLevel = scope === "IDENTITY_PRESSURE" ? 0.9 : scope === "AUTHORITY_EXCEEDED" ? 0.8 : 0.1;
+  const epistemic = {
+    confidence,
+    uncertainty_band: [Math.max(0, confidence - 0.12), Math.min(1, confidence + 0.08)],
+    cognitive_field: {
+      attention: scope === "CONFIRMED" ? 0.75 : 0.4,
+      threat: threatLevel,
+      boundary: scope !== "CONFIRMED" ? 0.9 : 0.2
+    },
+    unknowns: scope === "OUTSIDE_PACK" ? ["outside_current_scope"] : []
+  };
+  return res.json({ ok: true, answer, scope, confirmed: scope === "CONFIRMED", seal_id: sealRes.seal_id || null, verify_url: sealRes.verify_url || null, trace_url: sealRes.seal_id ? `/trace/${sealRes.seal_id}` : null, source: "claude", epistemic });
 });
