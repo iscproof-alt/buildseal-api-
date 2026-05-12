@@ -1302,7 +1302,7 @@ If outside scope: respond with exactly: "That falls outside the current Financia
 
 // ── NYM ASK ENDPOINT ──────────────────────────────────────────────────────────
 app.post('/nym/ask', async (req, res) => {
-  const { q } = req.body;
+  const { q, history } = req.body;
   if (!q) return res.status(400).json({ ok: false, error: 'q required' });
 
   const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY; // legacy
@@ -1355,6 +1355,7 @@ When a question is outside your scope, do not say "I cannot engage." Say: "That 
 You observe, you do not judge. You seal what occurred, not what should have occurred.
 
 You are not a chatbot. You are a protocol witness. Every response becomes evidence. I create the trail. Humans bear the weight.` },
+            ...(history && Array.isArray(history) ? history.slice(-10) : []),
             { role: "user", content: q }
           ]
         })
