@@ -980,7 +980,37 @@ async function ensureProofSchema() {
 ensureProofSchema()
   .then(() => {
     console.log('[OK] proof schema ready');
-    app.listen(process.env.PORT || 3000, () => log("info", "server.start", { port: process.env.PORT || 3000 }));
+    app.post('/nym/resume', async (req, res) => {
+  const { seal_id } = req.body;
+  if (!seal_id) return res.status(400).json({ ok: false, error: 'seal_id required' });
+  try {
+    const chain = [];
+    let current_id = seal_id;
+    let depth = 0;
+    while (current_id && depth < 10) {
+      const r = await pool.query("SELECT seal_id, payload_json, created_at FROM seals WHERE seal_id=$1", [current_id]);
+      if (!r.rows.length) break;
+      const row = r.rows[0];
+      const pj = row.payload_json ? (typeof row.payload_json === 'string' ? JSON.parse(row.payload_json) : row.payload_json) : {};
+      if (pj.decision_type === 'nym_exchange' && pj.reasons && pj.reasons[0]) {
+        chain.unshift({ q: pj.reasons[0], answer: pj.reasons[1] || pj.decision || '', seal_id: row.seal_id, created_at: row.created_at });
+      }
+      current_id = pj.prev_seal_id || null;
+      depth++;
+    }
+    if (!chain.length) return res.status(404).json({ ok: false, error: 'No nym exchanges found in chain' });
+    const resumeSeal = await fetch(`http://localhost:${process.env.PORT || 3000}/seal/decision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actor: 'nym-v0.1', decision_type: 'session_resume', decision: 'RESUMED', input_ref: seal_id, reasons: ['session_resume_from:' + seal_id], counterfactuals: [] })
+    }).then(r => r.json()).catch(() => ({}));
+    return res.json({ ok: true, restored: true, chain_length: chain.length, context: chain, resume_seal_id: resumeSeal.seal_id || null, resume_verify_url: resumeSeal.verify_url || null });
+  } catch(e) {
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.listen(process.env.PORT || 3000, () => log("info", "server.start", { port: process.env.PORT || 3000 }));
   })
   .catch(err => {
     console.error('[ERROR] proof schema migration failed:', err.message);
@@ -1360,7 +1390,7 @@ app.post('/nym/ask', async (req, res) => {
 
   const sealRes = await fetch("https://buildseal-api-production-3ca5.up.railway.app/seal/decision", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ actor: "nym-v0.1", decision_type: "nym_exchange", decision: scope, input_ref: q.slice(0,100), model_version: "claude-sonnet-4-20250514", reasons: [q] })
+    body: JSON.stringify({ actor: "nym-v0.1", decision_type: "nym_exchange", decision: scope, input_ref: q.slice(0,100), model_version: "claude-sonnet-4-20250514", reasons: [q, answer] })
   }).then(r => r.json()).catch(() => ({}));
 
   const confidence = scope === "CONFIRMED" ? 0.85 : 0.45;
