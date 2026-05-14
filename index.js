@@ -1036,7 +1036,8 @@ app.post('/seal/decision', async (req, res) => {
     counterfactuals,
     policy,
     epistemic,
-    relations
+    relations,
+    prev_seal_id
   } = req.body;
 
   if (!actor || !decision || !decision_type) {
@@ -1068,6 +1069,7 @@ app.post('/seal/decision', async (req, res) => {
     policy: policy || null,
     epistemic: epistemic || null,
     relations: relations || [],
+    prev_seal_id: prev_seal_id || null,
     execution_context: {
       build_commit: BUILD_COMMIT,
       model_version: model_version || null,
