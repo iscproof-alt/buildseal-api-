@@ -1390,7 +1390,7 @@ app.post('/nym/ask', async (req, res) => {
 
   const sealRes = await fetch("https://buildseal-api-production-3ca5.up.railway.app/seal/decision", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ actor: "nym-v0.1", decision_type: "nym_exchange", decision: scope, input_ref: q.slice(0,100), model_version: "claude-sonnet-4-20250514", reasons: [q, answer] })
+    body: JSON.stringify({ actor: "nym-v0.1", decision_type: "nym_exchange", decision: scope, input_ref: q.slice(0,100), model_version: "claude-sonnet-4-20250514", reasons: [q, answer], prev_seal_id: (req.body.last_seal_id || null) })
   }).then(r => r.json()).catch(() => ({}));
 
   const confidence = scope === "CONFIRMED" ? 0.85 : 0.45;
