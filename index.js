@@ -270,6 +270,13 @@ app.get("/seal/:seal_id", async (req, res) => {
           format_recognized: true,
           integrity_confirmed: true,
           signature_valid: true,
+          trusted_timestamp: !!tsa.present,
+        tsa,
+        validation: {
+          evidence_readable: true,
+          format_recognized: true,
+          integrity_confirmed: true,
+          signature_valid: true,
           trusted_timestamp: !!tsa.present
         },
         verify_url: 'https://buildseal.io/release/' + r.seal_id,
